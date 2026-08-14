@@ -1,0 +1,9 @@
+{
+  "name": "pump.it",
+  "short_name": "pump.it",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f1e6",
+  "theme_color": "#f4f1e6",
+  "lang": "pt-BR"
+}

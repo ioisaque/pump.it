@@ -1,0 +1,10 @@
+---
+description: Ponte — leia AGENTS.md (fonte de regras do repositório)
+alwaysApply: true
+---
+
+# Agente
+
+No início de cada sessão (e antes de mudanças de padrão), leia **`AGENTS.md`** na raiz deste repositório.
+
+Detalhes: `docs/ai/`. Não duplique regras neste arquivo.

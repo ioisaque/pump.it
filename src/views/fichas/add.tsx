@@ -6,26 +6,25 @@ import Icon from "components/Icon";
 import EntityHeader from "components/layout/EntityHeader";
 import { fichasQueryKey } from "domain/fichas/constants";
 import { FichaPayload } from "domain/fichas/types";
-import useTenantBase from "hooks/useTenantBase";
 import { Fragment } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { LINK } from "utils/link";
 
 const BTN_140 = { width: 140, height: 40 } as const;
 
 export default function FichaAdd() {
   const navigate = useNavigate();
-  const { base } = useTenantBase();
   const queryClient = useQueryClient();
 
   async function handleSubmit(payload: FichaPayload) {
     try {
       await addFicha(payload);
-      toast.success("Ficha cadastrada.");
+      toast.success("Plano de treino cadastrado.");
       await queryClient.invalidateQueries({ queryKey: fichasQueryKey });
-      navigate(`${base}/fichas`, { replace: true });
+      navigate(LINK("/workout-plans"), { replace: true });
     } catch {
-      toast.error("Não foi possível salvar a ficha.");
+      toast.error("Não foi possível salvar o plano de treino.");
     }
   }
 
@@ -37,7 +36,7 @@ export default function FichaAdd() {
             <Icon name="mdi:clipboard-list-outline" color="secondary.main" />
             <Box minWidth={0}>
               <Typography variant="subtitle2" color="secondary.main" fontWeight={600}>
-                Nova ficha
+                Novo plano de treino
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 Preencha os dados para cadastrar

@@ -24,6 +24,8 @@ import { FormHandles } from "@unform/core";
 import { Form } from "@unform/web";
 import { addNotificacao } from "api/notificacoes";
 import Chip from "components/Chip";
+import FotoCropDialog from "components/FotoCropDialog";
+import DateInput from "components/form/DateInput";
 import Input from "components/form/Input";
 import Icon from "components/Icon";
 import UserAvatar from "components/UserAvatar";
@@ -34,7 +36,7 @@ import { Pessoa } from "domain/pessoas/types";
 import { Flag } from "domain/tabelas/types";
 import { useFlagCatalogs } from "hooks/useFlagCatalogs";
 import { useMobileDialog } from "hooks/useMobileDialog";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { HORA, inputDateValue, NOW } from "utils/dates";
 
@@ -49,6 +51,7 @@ export default function NotificacaoCreateDialog({ open, onClose, academiaId }: N
   const queryClient = useQueryClient();
   const formRef = useRef<FormHandles>(null);
   const fotoInputRef = useRef<HTMLInputElement>(null);
+  const cropSrcRef = useRef<string | null>(null);
   const [sendNow, setSendNow] = useState(true);
   const [selectedNiveis, setSelectedNiveis] = useState<number[]>([]);
   const [selectedPessoas, setSelectedPessoas] = useState<Pessoa[]>([]);
@@ -57,6 +60,8 @@ export default function NotificacaoCreateDialog({ open, onClose, academiaId }: N
   const [inactiveMinutes, setInactiveMinutes] = useState("");
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropFileName, setCropFileName] = useState("foto.jpg");
   const [previewTitulo, setPreviewTitulo] = useState("");
   const [previewMensagem, setPreviewMensagem] = useState("");
   const [previewLink, setPreviewLink] = useState("");
@@ -115,6 +120,11 @@ export default function NotificacaoCreateDialog({ open, onClose, academiaId }: N
     setInactiveMinutes("");
     setFotoFile(null);
     setFotoPreview(null);
+    setCropSrc(null);
+    if (cropSrcRef.current) {
+      URL.revokeObjectURL(cropSrcRef.current);
+      cropSrcRef.current = null;
+    }
     setPreviewTitulo("");
     setPreviewMensagem("");
     setPreviewLink("");
@@ -133,20 +143,49 @@ export default function NotificacaoCreateDialog({ open, onClose, academiaId }: N
     setSelectedNiveis((prev) => (prev.includes(id) ? prev.filter((n) => n !== id) : [...prev, id]));
   }
 
-  function onFotoChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) {
-      setFotoFile(null);
-      setFotoPreview(null);
-      return;
-    }
-    if (!file.type.startsWith("image/")) {
-      toast.error("Selecione um arquivo de imagem.");
-      event.target.value = "";
-      return;
-    }
+  useEffect(() => {
+    return () => {
+      if (cropSrcRef.current) {
+        URL.revokeObjectURL(cropSrcRef.current);
+        cropSrcRef.current = null;
+      }
+    };
+  }, []);
+
+  function applyFotoFile(file: File) {
+    if (fotoPreview?.startsWith("blob:")) URL.revokeObjectURL(fotoPreview);
     setFotoFile(file);
     setFotoPreview(URL.createObjectURL(file));
+  }
+
+  function openFotoCrop(file: File) {
+    if (cropSrcRef.current) {
+      URL.revokeObjectURL(cropSrcRef.current);
+      cropSrcRef.current = null;
+    }
+    const url = URL.createObjectURL(file);
+    cropSrcRef.current = url;
+    setCropSrc(url);
+    setCropFileName(file.name || "foto.jpg");
+  }
+
+  function closeFotoCrop() {
+    if (cropSrcRef.current) {
+      URL.revokeObjectURL(cropSrcRef.current);
+      cropSrcRef.current = null;
+    }
+    setCropSrc(null);
+  }
+
+  function onFotoChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Selecione um arquivo de imagem.");
+      return;
+    }
+    openFotoCrop(file);
   }
 
   function onFotoDrop(file: File) {
@@ -154,8 +193,7 @@ export default function NotificacaoCreateDialog({ open, onClose, academiaId }: N
       toast.error("Selecione um arquivo de imagem.");
       return;
     }
-    setFotoFile(file);
-    setFotoPreview(URL.createObjectURL(file));
+    openFotoCrop(file);
   }
 
   async function handleSubmit(formData: Record<string, unknown>) {
@@ -213,6 +251,7 @@ export default function NotificacaoCreateDialog({ open, onClose, academiaId }: N
   }
 
   return (
+    <>
     <Dialog open={open} onClose={closeDialog} scroll="paper" {...mobileDialog}>
       <DialogTitle sx={{ px: 3, py: 2 }}>
         <Stack direction="row" alignItems="center" gap={1.5}>
@@ -563,14 +602,10 @@ export default function NotificacaoCreateDialog({ open, onClose, academiaId }: N
               {!sendNow && (
                 <Grid container spacing={1.5} sx={{ mt: 0 }}>
                   <Grid item xs={12} sm={6}>
-                    <TextField
-                      type="date"
+                    <DateInput
                       label="Data do envio"
                       value={scheduledDate}
-                      onChange={(event) => setScheduledDate(event.target.value)}
-                      size="small"
-                      fullWidth
-                      InputLabelProps={{ shrink: true }}
+                      onChange={setScheduledDate}
                     />
                   </Grid>
                   <Grid item xs={12} sm={6}>
@@ -614,5 +649,13 @@ export default function NotificacaoCreateDialog({ open, onClose, academiaId }: N
         </Button>
       </DialogActions>
     </Dialog>
+    <FotoCropDialog
+      open={Boolean(cropSrc)}
+      imageSrc={cropSrc}
+      fileName={cropFileName}
+      onClose={closeFotoCrop}
+      onConfirm={applyFotoFile}
+    />
+    </>
   );
 }

@@ -17,6 +17,7 @@ export type User = {
   email: string;
   session_id: string;
   academia_id?: number;
+  academia_slug?: string;
   iat?: number;
   exp?: number;
 };

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { FormHandles } from "@unform/core";
 import { Form } from "@unform/web";
 import { addMensalidade, saveMensalidade } from "api/mensalidades";
+import FormDateInput from "components/form/FormDateInput";
 import Input from "components/form/Input";
 import Select from "components/form/Select";
 import Icon from "components/Icon";
@@ -86,13 +87,7 @@ export default function MensalidadeFormDialog({ open, onClose, academiaId, initi
               required
               inputProps={{ step: "0.01", min: "0.01" }}
             />
-            <Input
-              name="vencimento"
-              label="Vencimento"
-              type="date"
-              required
-              InputLabelProps={{ shrink: true }}
-            />
+            <FormDateInput name="vencimento" label="Vencimento" required />
             <Select name="status" label="Status">
               {Object.values(MENSALIDADE_STATUS).map((s) => (
                 <MenuItem key={s} value={s}>

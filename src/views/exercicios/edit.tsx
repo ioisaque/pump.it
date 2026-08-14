@@ -17,17 +17,16 @@ import EntityHeader from "components/layout/EntityHeader";
 import { EXERCICIOS_QUERY_KEY, exercicioQueryKey } from "domain/exercicios/constants";
 import { ExercicioFormData } from "domain/exercicios/types";
 import { validateExercicioForm } from "domain/exercicios/validators";
-import useTenantBase from "hooks/useTenantBase";
 import { Fragment, useEffect, useRef } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
+import { LINK } from "utils/link";
 
 const BTN_140 = { width: 140, height: 40 } as const;
 
 export default function ExercicioEdit() {
   const { id } = useParams();
   const exercicioId = Number(id);
-  const { base } = useTenantBase();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const formRef = useRef<FormHandles>(null);
@@ -85,7 +84,7 @@ export default function ExercicioEdit() {
     onSuccess: async () => {
       toast.success("Exercício excluído.");
       await queryClient.invalidateQueries({ queryKey: EXERCICIOS_QUERY_KEY });
-      navigate(`${base}/exercicios`);
+      navigate(LINK("/exercicios"));
     },
     onError: () => toast.error("Não foi possível excluir."),
   });
@@ -129,7 +128,7 @@ export default function ExercicioEdit() {
           sx={{ mt: 2, width: 140, height: 40 }}
           variant="contained"
           color="quinzel"
-          onClick={() => navigate(`${base}/exercicios`)}
+          onClick={() => navigate(LINK("/exercicios"))}
         >
           <Icon name="undo" />
           Voltar
@@ -174,7 +173,7 @@ export default function ExercicioEdit() {
               <Icon name="mdi:delete-outline" />
               Excluir
             </Button>
-            <Button onClick={() => navigate(`${base}/exercicios`)} variant="contained" color="quinzel" sx={BTN_140}>
+            <Button onClick={() => navigate(LINK("/exercicios"))} variant="contained" color="quinzel" sx={BTN_140}>
               <Icon name="undo" />
               Voltar
             </Button>

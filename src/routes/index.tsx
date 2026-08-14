@@ -1,9 +1,11 @@
 import { Backdrop, CircularProgress, CssBaseline, ThemeProvider } from "@mui/material";
+import AppErrorBoundary from "components/AppErrorBoundary";
 import RequireAuth, { RequireStaff } from "components/auth/RequireAuth";
 import { DashboardLayout } from "components/layout/Dashboard";
 import FakeStatusBar, { AppSafeArea } from "components/layout/FakeStatusBar";
 import React, { Suspense, useLayoutEffect } from "react";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Outlet, Route, Routes, useLocation } from "react-router-dom";
+import { errorRoutes } from "routes/errors";
 import { acessosRoutes } from "routes/acessos";
 import { authRoutes } from "routes/auth";
 import { avaliacoesRoutes } from "routes/avaliacoes";
@@ -11,6 +13,7 @@ import { checkinRoutes } from "routes/checkin";
 import { configuracoesRoutes } from "routes/configuracoes";
 import { dashboardRoutes } from "routes/dashboard";
 import { exerciciosRoutes } from "routes/exercicios";
+import { tenantFallbackRoutes } from "routes/fallback";
 import { fichasRoutes } from "routes/fichas";
 import { mensalidadesRoutes } from "routes/mensalidades";
 import { notificacoesRoutes } from "routes/notificacoes";
@@ -63,6 +66,7 @@ const AppRoutes: React.FC = () => {
         {configuracoesRoutes}
         {sistemaRoutes}
       </Route>
+      {tenantFallbackRoutes}
     </>
   );
 
@@ -70,26 +74,38 @@ const AppRoutes: React.FC = () => {
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
       <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-        <AppChromeBar />
-        <AppSafeArea>
-          <Suspense fallback={<RouteSuspenseFallback />}>
-            <Routes>
-              <Route path="/install" element={<InstallPage />} />
-              <Route path="/:academiaSlug/install" element={<InstallPage />} />
-              {authRoutes}
+        <AppErrorBoundary>
+          <AppChromeBar />
+          <AppSafeArea>
+            <Suspense fallback={<RouteSuspenseFallback />}>
+              <Routes>
+                <Route path="/install" element={<InstallPage />} />
+                <Route path="/:academiaSlug/install" element={<InstallPage />} />
+                {authRoutes}
 
-              <Route element={<RequireAuth />}>
-                <Route path="/" element={<DashboardLayout />}>
-                  <Route element={<RequireStaff />}>{plataformaRoutes}</Route>
-                  {tenantCrud}
+                <Route element={<RequireAuth />}>
+                  <Route path="/" element={<DashboardLayout />}>
+                    <Route element={<RequireStaff />}>{plataformaRoutes}</Route>
+                    {tenantCrud}
+                  </Route>
+                  <Route path="/:academiaSlug" element={<DashboardLayout />}>
+                    {tenantCrud}
+                  </Route>
                 </Route>
-                <Route path="/:academiaSlug" element={<DashboardLayout />}>
-                  {tenantCrud}
+
+                <Route
+                  element={
+                    <Suspense fallback={<RouteSuspenseFallback />}>
+                      <Outlet />
+                    </Suspense>
+                  }
+                >
+                  {errorRoutes}
                 </Route>
-              </Route>
-            </Routes>
-          </Suspense>
-        </AppSafeArea>
+              </Routes>
+            </Suspense>
+          </AppSafeArea>
+        </AppErrorBoundary>
       </BrowserRouter>
     </ThemeProvider>
   );

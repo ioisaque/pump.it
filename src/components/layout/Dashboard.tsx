@@ -1,7 +1,9 @@
 import { Backdrop, CircularProgress, Grid, styled } from "@mui/material";
+import { pingSessao } from "api/sessoes";
 import PwaPermissionsGate from "components/pwa/PwaPermissionsGate";
+import useAuth from "hooks/useAuth";
 import { PAGE_BACKGROUND } from "utils/app-chrome";
-import { ReactNode, Suspense } from "react";
+import { ReactNode, Suspense, useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import UserBar from "./UserBar";
 
@@ -40,6 +42,18 @@ function RouteSuspenseFallback() {
 }
 
 export function DashboardLayout({ children }: { children?: ReactNode }) {
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const ping = () => {
+      void pingSessao().catch(() => undefined);
+    };
+    ping();
+    const timer = window.setInterval(ping, 60_000);
+    return () => window.clearInterval(timer);
+  }, [isAuthenticated]);
+
   return (
     <PwaPermissionsGate>
       <Wrapper>

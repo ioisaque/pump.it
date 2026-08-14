@@ -7,7 +7,7 @@ export function validateFichaForm(data: {
   itens?: FichaItem[];
 }): string | null {
   const nome = String(data.nome ?? "").trim();
-  if (nome.length < 2) return "Informe o nome da ficha.";
+  if (nome.length < 2) return "Informe o nome do plano.";
   const padrao = String(data.padrao ?? "").trim().toUpperCase();
   if (!isFichaPadrao(padrao)) return "Selecione o padrão (A_B, A_B_C ou A_B_C_D).";
   const itens = data.itens ?? [];

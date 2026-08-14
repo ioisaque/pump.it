@@ -23,6 +23,7 @@ import useAuth from "hooks/useAuth";
 import useTenantBase from "hooks/useTenantBase";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { Link as RouterLink, useLocation } from "react-router-dom";
+import { LINK } from "utils/link";
 
 type NavItem = {
   label: string;
@@ -33,6 +34,8 @@ type NavItem = {
   tenantOnly?: boolean;
   /** Staff+ (esconde de cliente/aluno). */
   staffOnly?: boolean;
+  /** Só cliente/aluno. */
+  alunoOnly?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
@@ -40,9 +43,10 @@ const NAV_ITEMS: NavItem[] = [
   // Gerais: master em `/` ou `/plataforma` sem slug; tenant com `/:slug`
   { label: "Pessoas", icon: "accounts", path: "/pessoas", staffOnly: true },
   { label: "Exercícios", icon: "mdi:dumbbell", path: "/exercicios", tenantOnly: true },
-  { label: "Fichas", icon: "mdi:clipboard-list-outline", path: "/fichas", tenantOnly: true },
+  { label: "Planos de treino", icon: "mdi:clipboard-list-outline", path: "/workout-plans", tenantOnly: true },
   { label: "Avaliações", icon: "mdi:clipboard-pulse-outline", path: "/avaliacoes", tenantOnly: true },
-  { label: "Check-ins", icon: "mdi:door-open", path: "/acessos", tenantOnly: true },
+  { label: "Check-in", icon: "mdi:login", path: "/workout/add", tenantOnly: true, alunoOnly: true },
+  { label: "Check-ins", icon: "mdi:door-open", path: "/acessos", tenantOnly: true, staffOnly: true },
   { label: "Mensalidades", icon: "mdi:cash-multiple", path: "/mensalidades", tenantOnly: true },
   { label: "Tabelas", icon: "mdi:table-cog", path: "/tabelas", staffOnly: true },
   { label: "Notificações", icon: "notifications", path: "/notificacoes", staffOnly: true },
@@ -55,10 +59,9 @@ const SISTEMA_ITEMS: NavItem[] = [
   { label: "Integrações", icon: "mdi:connection", path: "/sistema/integracoes" },
 ];
 
-function resolveTo(base: string, path: string, platformOnly?: boolean) {
+function navTo(path: string, platformOnly?: boolean) {
   if (platformOnly) return path;
-  if (!path) return base || "/";
-  return `${base}${path}`;
+  return LINK(path || "/");
 }
 
 function pathSelected(pathname: string, to: string) {
@@ -69,7 +72,7 @@ function pathSelected(pathname: string, to: string) {
 export default function UserBarNav() {
   const theme = useTheme();
   const { user } = useAuth();
-  const { base, academiaSlug } = useTenantBase();
+  const { academiaSlug } = useTenantBase();
   const location = useLocation();
   const isMaster = (user?.nivel ?? 0) >= MASTER_NIVEL_ID;
   const isCliente = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
@@ -86,6 +89,7 @@ export default function UserBarNav() {
       NAV_ITEMS.filter((item) => {
         if (item.masterOnly && !isMaster) return false;
         if (item.staffOnly && isCliente) return false;
+        if (item.alunoOnly && !isCliente) return false;
         if (item.platformOnly && isTenant) return false;
         // Dados de academia (fichas/acessos/…): só com slug no path
         if (item.tenantOnly && !isTenant) return false;
@@ -102,9 +106,9 @@ export default function UserBarNav() {
     () =>
       SISTEMA_ITEMS.map((item) => ({
         ...item,
-        to: resolveTo(base, item.path),
+        to: navTo(item.path),
       })),
-    [base],
+    [location.pathname],
   );
 
   useEffect(() => {
@@ -161,7 +165,7 @@ export default function UserBarNav() {
           </Box>
           <List sx={{ py: 1, overflow: "auto" }}>
             {visibleItems.map((item) => {
-              const to = resolveTo(base, item.path, item.platformOnly);
+              const to = navTo(item.path, item.platformOnly);
               return (
                 <ListItemButton
                   key={to}
@@ -208,7 +212,7 @@ export default function UserBarNav() {
   return (
     <Fragment>
       {visibleItems.map((item) => {
-        const to = resolveTo(base, item.path, item.platformOnly);
+        const to = navTo(item.path, item.platformOnly);
         return showLabels ? (
           <Button key={to} component={RouterLink} to={to} color="inherit" size="small" startIcon={<Icon name={item.icon} />}>
             {item.label}

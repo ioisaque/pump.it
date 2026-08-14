@@ -14,6 +14,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { listExercicios } from "api/exercicios";
 import { findFicha } from "api/fichas";
+import { findTreino } from "api/treinos";
 import Icon from "components/Icon";
 import { EXERCICIOS_QUERY_KEY } from "domain/exercicios/constants";
 import { resolveUploadUrl } from "domain/exercicios/formatters";
@@ -23,7 +24,8 @@ import { formatDescanso } from "domain/fichas/formatters";
 import { FichaItem } from "domain/fichas/types";
 import useTenantBase from "hooks/useTenantBase";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { LINK } from "utils/link";
 
 const DIA_COLORS: Record<string, string> = {
   A: "#FF5356",
@@ -293,19 +295,34 @@ function TreinoSlide({
 export default function FichaTreino() {
   const { id } = useParams();
   const [search] = useSearchParams();
+  const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { base } = useTenantBase();
-  const dia = (search.get("dia") || "").toUpperCase();
-  const sessao = search.get("sessao") === "1";
-  const fichaId = Number(id);
+  const { academiaSlug } = useTenantBase();
+  const fromWorkout = pathname.split("/").includes("workout");
+  const treinoId = Number(id);
+  const fichaIdParam = Number(id);
+  const diaQuery = (search.get("dia") || "").toUpperCase();
   const [index, setIndex] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
 
-  const { data: ficha, isLoading, error } = useQuery({
+  const { data: treino, isLoading: loadingTreino, error: treinoError } = useQuery({
+    queryKey: ["treino", treinoId],
+    queryFn: () => findTreino(treinoId, { academia_slug: academiaSlug }),
+    enabled: fromWorkout && Number.isFinite(treinoId) && treinoId > 0,
+  });
+
+  const fichaId = fromWorkout ? Number(treino?.id_ficha) : fichaIdParam;
+  const dia = fromWorkout ? String(treino?.dia || "A").toUpperCase() : diaQuery;
+
+  const { data: fichaLoaded, isLoading: loadingFicha, error: fichaError } = useQuery({
     queryKey: fichaQueryKey(fichaId),
     queryFn: () => findFicha(fichaId),
-    enabled: Number.isFinite(fichaId) && fichaId > 0,
+    enabled: !fromWorkout && Number.isFinite(fichaId) && fichaId > 0,
   });
+
+  const ficha = fromWorkout ? treino?.ficha : fichaLoaded;
+  const isLoading = fromWorkout ? loadingTreino : loadingFicha;
+  const error = fromWorkout ? treinoError : fichaError;
 
   const { data: exercicios = [] } = useQuery({
     queryKey: EXERCICIOS_QUERY_KEY,
@@ -336,8 +353,13 @@ export default function FichaTreino() {
     setIndex(next);
   }
 
-  if (!dia) {
-    return <Navigate to={`${base}/fichas`} replace />;
+  const qTreino = Number(search.get("treino"));
+  if (!fromWorkout && Number.isFinite(qTreino) && qTreino > 0) {
+    return <Navigate to={LINK(`/workout/${qTreino}`)} replace />;
+  }
+
+  if (!fromWorkout && !dia) {
+    return <Navigate to={LINK("/workout-plans")} replace />;
   }
 
   return (
@@ -381,7 +403,7 @@ export default function FichaTreino() {
       {isLoading ? (
         <Skeleton variant="rectangular" sx={{ aspectRatio: "1 / 1", width: "100%", borderRadius: 2 }} />
       ) : error || !ficha ? (
-        <Alert severity="error">Não foi possível carregar a ficha.</Alert>
+        <Alert severity="error">Não foi possível carregar o plano de treino.</Alert>
       ) : itens.length === 0 ? (
         <Alert severity="info">Nenhum exercício no treino {dia}.</Alert>
       ) : (
@@ -456,10 +478,12 @@ export default function FichaTreino() {
         <Button
           size="small"
           color="inherit"
-          onClick={() => navigate(sessao ? `${base}/checkin/resumo` : `${base}/fichas`)}
+          onClick={() =>
+            navigate(fromWorkout ? LINK(`/workout/${treinoId}/end`) : LINK("/workout-plans"))
+          }
           sx={{ color: "text.disabled", textTransform: "none", fontWeight: 400 }}
         >
-          {sessao ? "Encerrar treino" : "Voltar às fichas"}
+          {fromWorkout ? (treino?.encerrado_em ? "Ver resumo" : "Encerrar treino") : "Voltar aos planos"}
         </Button>
       </Box>
     </Box>

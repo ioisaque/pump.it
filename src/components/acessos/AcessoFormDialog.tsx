@@ -36,7 +36,7 @@ export default function AcessoFormDialog({
     formRef.current?.setData({
       id_pessoa: initial?.id_pessoa != null ? String(initial.id_pessoa) : "",
       tipo: (initial?.tipo as AcessoTipo) || defaultTipo,
-      registrado_em: initial?.registrado_em ?? "",
+      criado_em: initial?.criado_em ?? "",
       origem: initial?.origem ?? "",
     });
   }, [open, initial, defaultTipo]);
@@ -47,7 +47,7 @@ export default function AcessoFormDialog({
     onSubmit({
       id_pessoa: idPessoa,
       tipo: (data.tipo as AcessoTipo) || defaultTipo,
-      registrado_em: data.registrado_em || "",
+      criado_em: data.criado_em || "",
       origem: data.origem || "",
     });
   }
@@ -73,8 +73,8 @@ export default function AcessoFormDialog({
               ))}
             </Select>
             <Input
-              name="registrado_em"
-              label="Registrado em"
+              name="criado_em"
+              label="Criado em"
               placeholder="YYYY-MM-DD HH:mm:ss"
               helperText="Vazio = agora (servidor)"
             />

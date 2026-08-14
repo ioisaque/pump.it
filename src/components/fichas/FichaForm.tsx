@@ -4,6 +4,7 @@ import { FormHandles } from "@unform/core";
 import { Form } from "@unform/web";
 import { listExercicios } from "api/exercicios";
 import ActionIcon from "components/data-table/ActionIcon";
+import AutocompleteSelect from "components/form/AutocompleteSelect";
 import Input from "components/form/Input";
 import { compactInputRootSx } from "components/form/inputGroupStyles";
 import Select from "components/form/Select";
@@ -57,6 +58,10 @@ export default function FichaForm({ formId, initial, onSubmit }: FichaFormProps)
     retry: 0,
   });
 
+  const exercicioOptions = useMemo(
+    () => exercicios.map((ex) => ({ id: ex.id, label: `${String(ex.id).padStart(4, "0")} ${ex.nome}` })),
+    [exercicios],
+  );
   const dias = useMemo(() => diasFromPadrao(String(padrao)), [padrao]);
 
   useEffect(() => {
@@ -145,24 +150,18 @@ export default function FichaForm({ formId, initial, onSubmit }: FichaFormProps)
               spacing={1}
               alignItems={{ sm: "center" }}
             >
-              <TextField
-                select
-                size="small"
+              <AutocompleteSelect
                 label="Exercício"
+                options={exercicioOptions}
                 value={item.id_exercicio || ""}
-                onChange={(e) => {
-                  const id = Number(e.target.value);
-                  const ex = exercicios.find((opt) => opt.id === id);
-                  updateItem(index, { id_exercicio: id, carga: ex?.carga_inicial ?? null });
+                placeholder="Pesquisar exercício…"
+                noOptionsText="Nenhum exercício"
+                onChange={(id) => {
+                  const nextId = id ?? 0;
+                  const ex = exercicios.find((opt) => opt.id === nextId);
+                  updateItem(index, { id_exercicio: nextId, carga: ex?.carga_inicial ?? null });
                 }}
-                sx={{ minWidth: 180, flex: 1, ...compactFieldSx }}
-              >
-                {exercicios.map((ex) => (
-                  <MenuItem key={ex.id} value={ex.id}>
-                    {ex.nome}
-                  </MenuItem>
-                ))}
-              </TextField>
+              />
               <TextField
                 select
                 size="small"

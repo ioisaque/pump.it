@@ -4,22 +4,21 @@ import Chip from "components/Chip";
 import Icon from "components/Icon";
 import { NOTIFY_THEME } from "domain/integracoes/constants";
 import { IntegracaoProviderSummary } from "domain/integracoes/types";
-import useTenantBase from "hooks/useTenantBase";
 import { Link as RouterLink } from "react-router-dom";
+import { LINK } from "utils/link";
 
 type NotifyProviderCardProps = {
   provider: IntegracaoProviderSummary;
 };
 
 export default function NotifyProviderCard({ provider }: NotifyProviderCardProps) {
-  const { base } = useTenantBase();
   const theme = NOTIFY_THEME;
 
   return (
     <Card sx={{ height: "100%", overflow: "hidden" }}>
       <Box
         component={RouterLink}
-        to={`${base}/sistema/integracoes/${provider.id}`}
+        to={LINK(`/sistema/integracoes/${provider.id}`)}
         sx={{
           display: "block",
           height: "100%",

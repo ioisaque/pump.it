@@ -13,7 +13,7 @@ export type AcessoBody = {
   academia_id?: number;
   id_pessoa: number;
   tipo: AcessoTipo | string;
-  registrado_em?: string;
+  criado_em?: string;
   origem?: string | null;
 };
 

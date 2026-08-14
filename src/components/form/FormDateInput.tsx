@@ -1,19 +1,19 @@
-import { TextField, TextFieldProps } from "@mui/material";
+import { TextFieldProps } from "@mui/material";
 import { useField } from "@unform/core";
-import { US_DATE } from "domain/shared/formatters";
+import DateInput from "components/form/DateInput";
+import { inputDateValue } from "domain/datahora/types";
 import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { compactInputRootSx } from "./inputGroupStyles";
 
 type FormDateInputProps = Omit<TextFieldProps, "name" | "value" | "onChange" | "type"> & {
   name: string;
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
+  clearable?: boolean;
 };
 
-/** Unform date field — native `type="date"` (ISO yyyy-mm-dd). */
-export default function FormDateInput({ name, onChange, sx, size = "small", ...rest }: FormDateInputProps) {
+export default function FormDateInput({ name, onChange, ...rest }: FormDateInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { fieldName, defaultValue, registerField, error } = useField(name);
-  const [value, setValue] = useState(() => US_DATE(defaultValue != null ? String(defaultValue) : ""));
+  const [value, setValue] = useState(() => inputDateValue(defaultValue != null ? String(defaultValue) : ""));
   const valueRef = useRef(value);
   valueRef.current = value;
 
@@ -23,7 +23,7 @@ export default function FormDateInput({ name, onChange, sx, size = "small", ...r
       ref: inputRef,
       getValue: () => valueRef.current,
       setValue: (_ref, nextValue) => {
-        const iso = US_DATE(nextValue == null ? "" : String(nextValue));
+        const iso = inputDateValue(nextValue == null ? "" : String(nextValue));
         setValue(iso);
         valueRef.current = iso;
       },
@@ -35,26 +35,19 @@ export default function FormDateInput({ name, onChange, sx, size = "small", ...r
   }, [fieldName, registerField]);
 
   return (
-    <TextField
+    <DateInput
       {...rest}
-      type="date"
-      size={size}
-      fullWidth
-      variant="outlined"
       name={name}
       id={fieldName}
       value={value}
+      onChange={(iso) => {
+        setValue(iso);
+        valueRef.current = iso;
+        onChange?.({ target: { name, value: iso } } as ChangeEvent<HTMLInputElement>);
+      }}
       inputRef={inputRef}
       error={Boolean(error)}
       helperText={error || rest.helperText}
-      InputLabelProps={{ shrink: true, ...rest.InputLabelProps }}
-      onChange={(event: ChangeEvent<HTMLInputElement>) => {
-        const next = event.target.value;
-        setValue(next);
-        valueRef.current = next;
-        onChange?.(event);
-      }}
-      sx={[compactInputRootSx(), ...(Array.isArray(sx) ? sx : sx ? [sx] : [])]}
     />
   );
 }

@@ -10,6 +10,7 @@ export type FichaItem = {
   repeticoes: string;
   carga?: number | null;
   descanso_segundos: number;
+  musculos?: { id: number; nome: string; color: string; icon: string }[];
 };
 
 export type FichaAlunoRef = {

@@ -8,15 +8,14 @@ import EntityHeader from "components/layout/EntityHeader";
 import { EXERCICIO_STATUS, EXERCICIOS_QUERY_KEY } from "domain/exercicios/constants";
 import { ExercicioFormData } from "domain/exercicios/types";
 import { validateExercicioForm } from "domain/exercicios/validators";
-import useTenantBase from "hooks/useTenantBase";
 import { Fragment, useRef } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { LINK } from "utils/link";
 
 const BTN_140 = { width: 140, height: 40 } as const;
 
 export default function ExercicioAdd() {
-  const { base } = useTenantBase();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const formRef = useRef<FormHandles>(null);
@@ -38,7 +37,7 @@ export default function ExercicioAdd() {
       });
       await queryClient.invalidateQueries({ queryKey: EXERCICIOS_QUERY_KEY });
       toast.success("Exercício criado.");
-      navigate(`${base}/exercicios/${exercicio.id}`);
+      navigate(LINK(`/exercicios/${exercicio.id}`));
     } catch {
       toast.error("Não foi possível salvar.");
     }

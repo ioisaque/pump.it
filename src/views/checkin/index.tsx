@@ -1,21 +1,15 @@
 import { Alert, Box, Button, Skeleton, Stack, Typography } from "@mui/material";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addAcesso, listAcessos } from "api/acessos";
+import { useQuery } from "@tanstack/react-query";
 import { listExercicios } from "api/exercicios";
-import { listFichas } from "api/fichas";
+import { addTreino } from "api/treinos";
 import Chip from "components/Chip";
 import Icon from "components/Icon";
-import { Acesso } from "domain/acessos/types";
 import { EXERCICIOS_QUERY_KEY } from "domain/exercicios/constants";
-import { fichasQueryKey } from "domain/fichas/constants";
-import { diasFromPadrao } from "domain/fichas/formatters";
-import { Ficha } from "domain/fichas/types";
 import { ALUNO_NIVEL_MAX } from "domain/pessoas/constants";
 import useAuth from "hooks/useAuth";
-import useTenantBase from "hooks/useTenantBase";
-import { useEffect, useMemo, useRef } from "react";
-import toast from "react-hot-toast";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { LINK } from "utils/link";
 
 const DIA_COLORS: Record<string, string> = {
   A: "#FF5356",
@@ -24,59 +18,33 @@ const DIA_COLORS: Record<string, string> = {
   D: "#FFD22B",
 };
 
-function diaFromOrigem(origem?: string | null): string | null {
-  const m = String(origem || "").match(/^app:([A-D])$/i);
-  return m ? m[1].toUpperCase() : null;
-}
-
-function nextDia(padrao: string, last?: string | null) {
-  const dias = diasFromPadrao(padrao);
-  if (!dias.length) return "A";
-  if (!last) return dias[0];
-  const i = dias.indexOf(last);
-  if (i < 0) return dias[0];
-  return dias[(i + 1) % dias.length];
-}
-
-function sortedAcessos(list: Acesso[]) {
-  return [...list].sort((a, b) => new Date(a.registrado_em).getTime() - new Date(b.registrado_em).getTime());
-}
-
 export default function CheckinDia() {
   const navigate = useNavigate();
-  const { base, academiaSlug } = useTenantBase();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const posted = useRef(false);
+  const { user, isLoading: authLoading } = useAuth();
   const isCliente = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
-
-  const { data: fichas = [], isLoading: loadingFichas } = useQuery({
-    queryKey: [...fichasQueryKey, "aluno"],
-    queryFn: () => listFichas(),
-  });
-
-  const { data: acessosData, isLoading: loadingAcessos } = useQuery({
-    queryKey: ["acessos", "self"],
-    queryFn: () => listAcessos({ academia_slug: academiaSlug, id_pessoa: user?.id }),
-    enabled: Boolean(user?.id),
-  });
 
   const { data: exercicios = [] } = useQuery({
     queryKey: EXERCICIOS_QUERY_KEY,
     queryFn: listExercicios,
+    enabled: isCliente,
   });
 
-  const ficha: Ficha | undefined = fichas[0];
-  const acessos = acessosData?.acessos ?? [];
-  const ordered = useMemo(() => sortedAcessos(acessos), [acessos]);
-  const last = ordered[ordered.length - 1];
-  const openEntrada = last?.tipo === "ENTRADA" ? last : null;
-  const lastSaida = [...ordered].reverse().find((a) => a.tipo === "SAIDA");
-  const dia = openEntrada
-    ? diaFromOrigem(openEntrada.origem) || "A"
-    : ficha
-      ? nextDia(String(ficha.padrao), diaFromOrigem(lastSaida?.origem))
-      : "A";
+  const {
+    data: treino,
+    isLoading: treinoLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["treinos", "add", user?.id],
+    queryFn: () => addTreino(),
+    enabled: isCliente && Boolean(user?.id),
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    retry: 1,
+  });
+
+  const ficha = treino?.ficha;
+  const dia = treino?.dia ?? "A";
   const itensDia = (ficha?.itens ?? []).filter((i) => String(i.dia).toUpperCase() === dia);
   const musculos = useMemo(() => {
     const map = new Map<number, { nome: string; color: string; icon: string }>();
@@ -89,36 +57,21 @@ export default function CheckinDia() {
     return [...map.values()];
   }, [itensDia, exercicios]);
 
-  const entradaMutation = useMutation({
-    mutationFn: () =>
-      addAcesso({
-        id_pessoa: user!.id,
-        tipo: "ENTRADA",
-        origem: `app:${dia}`,
-        academia_slug: academiaSlug,
-      }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["acessos"] });
-    },
-    onError: () => toast.error("Não foi possível registrar a entrada."),
-  });
-
-  useEffect(() => {
-    if (!isCliente || !user?.id || !ficha || posted.current) return;
-    if (loadingAcessos || loadingFichas) return;
-    if (openEntrada) return;
-    posted.current = true;
-    entradaMutation.mutate();
-  }, [isCliente, user?.id, ficha, loadingAcessos, loadingFichas, openEntrada, entradaMutation]);
-
-  if (!isCliente) {
+  if (!authLoading && !isCliente) {
     return <Alert severity="info">Check-in de treino é para o aluno.</Alert>;
   }
 
-  const loading = loadingFichas || loadingAcessos || entradaMutation.isLoading;
-  const entradaHora = openEntrada?.registrado_em
-    ? new Date(openEntrada.registrado_em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  const loading = authLoading || treinoLoading;
+  const entradaHora = treino?.iniciado_em
+    ? new Date(treino.iniciado_em.replace(" ", "T")).toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
     : "—";
+  const errMsg =
+    error && typeof error === "object" && "response" in error
+      ? String((error as { response?: { data?: { message?: string } } }).response?.data?.message ?? "")
+      : "";
 
   return (
     <Box sx={{ width: "100%", maxWidth: 480, mx: "auto", pb: 3 }}>
@@ -126,13 +79,15 @@ export default function CheckinDia() {
         Check-in
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        Entrada registrada. Confira o treino de hoje.
+        {treino ? "Entrada registrada. Confira o treino de hoje." : "Registrando entrada…"}
       </Typography>
 
-      {loading && !ficha ? (
+      {loading ? (
         <Skeleton variant="rounded" height={180} />
-      ) : !ficha ? (
-        <Alert severity="warning">Nenhuma ficha vinculada.</Alert>
+      ) : isError || !ficha || !treino ? (
+        <Alert severity="warning">
+          {errMsg || "Nenhum plano de treino vinculado."}
+        </Alert>
       ) : (
         <Stack spacing={2}>
           <Stack direction="row" alignItems="center" spacing={1}>
@@ -177,14 +132,13 @@ export default function CheckinDia() {
           <Button
             variant="contained"
             color="success"
-            disabled={!openEntrada && !entradaMutation.isSuccess}
             startIcon={<Icon name="mdi:dumbbell" />}
-            onClick={() => navigate(`${base}/fichas/${ficha.id}/treino?dia=${dia}&sessao=1`)}
+            onClick={() => navigate(LINK(`/workout/${treino.id}`))}
             sx={{ height: 48 }}
           >
             Treinar agora
           </Button>
-          <Button color="inherit" onClick={() => navigate(base || "/")} sx={{ color: "text.secondary" }}>
+          <Button color="inherit" onClick={() => navigate(LINK("/"))} sx={{ color: "text.secondary" }}>
             Agora não
           </Button>
         </Stack>

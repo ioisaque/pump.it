@@ -17,10 +17,10 @@ import { flagCode, resolveFlags } from "domain/tabelas/types";
 import { useFlagCatalogs } from "hooks/useFlagCatalogs";
 import { useMobileColumnVisibility } from "hooks/useMobileColumnVisibility";
 import { useStatusMutation } from "hooks/useStatusMutation";
-import useTenantBase from "hooks/useTenantBase";
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { apiBaseUrl } from "services/api";
+import { LINK } from "utils/link";
 import { formatPessoaDisplay } from "utils/pessoas/masks";
 
 const HIDE_ON_MOBILE = ["etiqueta", "visto_em"] as const;
@@ -34,7 +34,6 @@ function parseListTipo(raw: string | null): PessoaListTipo {
 
 function PessoaList() {
   const navigate = useNavigate();
-  const { base } = useTenantBase();
   const [searchParams] = useSearchParams();
   /** `?tipo=FUNCIONARIO|ALUNO|ALL` (default ALL). */
   const listTipo = parseListTipo(searchParams.get("tipo"));
@@ -270,7 +269,7 @@ function PessoaList() {
               }
               right={
                 <Button
-                  onClick={() => navigate(`${base}/pessoas/add`)}
+                  onClick={() => navigate(LINK("/pessoas/add"))}
                   variant="contained"
                   color="success"
                   sx={{ width: 140, height: 40 }}
@@ -299,7 +298,7 @@ function PessoaList() {
               onRowClick={(params, event) => {
                 const target = event.target as HTMLElement;
                 if (target.closest(".tableActions, a, button, [role='button']")) return;
-                navigate(`${base}/pessoas/${params.row.id}/edit`);
+                navigate(LINK(`/pessoas/${params.row.id}/edit`));
               }}
             />
           )}

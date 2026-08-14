@@ -54,7 +54,7 @@ export default function AcessosListPage() {
         {
           id_pessoa: Number(values.id_pessoa),
           tipo: values.tipo,
-          registrado_em: values.registrado_em || undefined,
+          criado_em: values.criado_em || undefined,
           origem: values.origem || null,
           academia_slug: academiaSlug,
         },
@@ -75,7 +75,7 @@ export default function AcessosListPage() {
         {
           id_pessoa: Number(values.id_pessoa),
           tipo: values.tipo,
-          registrado_em: values.registrado_em || undefined,
+          criado_em: values.criado_em || undefined,
           origem: values.origem || null,
         },
         scopeParams,
@@ -117,7 +117,7 @@ export default function AcessosListPage() {
         renderCell: (params) => params.value?.toString().padStart(5, "0"),
       },
       {
-        field: "registrado_em",
+        field: "criado_em",
         headerName: "Quando",
         flex: 1,
         minWidth: 160,

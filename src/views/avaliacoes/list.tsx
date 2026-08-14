@@ -3,7 +3,7 @@ import { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteAvaliacao, listAvaliacoes } from "api/avaliacoes";
 import ActionIcon from "components/data-table/ActionIcon";
-import GridTable, { GRID_COL_ACTIONS_TWO } from "components/data-table/GridTable";
+import GridTable from "components/data-table/GridTable";
 import TableActions from "components/data-table/TableActions";
 import Icon from "components/Icon";
 import EntityHeader from "components/layout/EntityHeader";
@@ -18,28 +18,30 @@ import { MouseEvent, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { apiBaseUrl } from "services/api";
+import { LINK } from "utils/link";
 
 const HIDE_ON_MOBILE = ["peso_kg", "altura_cm", "imc"] as const;
 
 export default function AvaliacoesList() {
   const navigate = useNavigate();
-  const { base } = useTenantBase();
+  const { academiaSlug } = useTenantBase();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const isCliente = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
   const [filter, setFilter] = useState("");
   const columnVisibilityModel = useMobileColumnVisibility(HIDE_ON_MOBILE);
-  const academiaId = user?.academia_id && user.academia_id > 0 ? user.academia_id : undefined;
+  const jwtAcademiaId = user?.academia_id && user.academia_id > 0 ? user.academia_id : undefined;
+  const hasAcademia = Boolean(jwtAcademiaId || academiaSlug);
 
   const { data, isLoading, error, refetch, isFetching } = useQuery({
-    queryKey: ["avaliacoes", academiaId],
-    queryFn: () => listAvaliacoes(academiaId ? { academia_id: academiaId } : undefined),
-    enabled: !!academiaId,
+    queryKey: ["avaliacoes", jwtAcademiaId ?? academiaSlug ?? "none"],
+    queryFn: () => listAvaliacoes(jwtAcademiaId ? { academia_id: jwtAcademiaId } : undefined),
+    enabled: hasAcademia,
     retry: 1,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteAvaliacao(id, academiaId ? { academia_id: academiaId } : undefined),
+    mutationFn: (id: number) => deleteAvaliacao(id, jwtAcademiaId ? { academia_id: jwtAcademiaId } : undefined),
     onSuccess: async () => {
       toast.success("Avaliação excluída.");
       await queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
@@ -65,8 +67,10 @@ export default function AvaliacoesList() {
     });
   }, [data?.avaliacoes, filter]);
 
+  const showPath = (id: number) =>
+    LINK(`/avaliacoes/${id}`, jwtAcademiaId ? { academia_id: jwtAcademiaId } : undefined);
   const editPath = (id: number) =>
-    academiaId ? `${base}/avaliacoes/${id}?academia_id=${academiaId}` : `${base}/avaliacoes/${id}`;
+    LINK(`/avaliacoes/${id}/edit`, jwtAcademiaId ? { academia_id: jwtAcademiaId } : undefined);
 
   const columns: GridColDef<Avaliacao>[] = useMemo(
     () => [
@@ -114,11 +118,16 @@ export default function AvaliacoesList() {
             {
               field: "actions",
               headerName: "Ações",
-              ...GRID_COL_ACTIONS_TWO,
+              width: 120,
+              minWidth: 120,
+              maxWidth: 120,
+              flex: 0,
+              resizable: false,
               sortable: false,
               filterable: false,
               renderCell: (params) => (
                 <TableActions>
+                  <ActionIcon icon="mdi:eye-outline" color="secondary.main" to={showPath(params.row.id)} />
                   <ActionIcon icon="line-md:edit" color="info.main" to={editPath(params.row.id)} />
                   <ActionIcon
                     icon="mdi:delete"
@@ -136,14 +145,13 @@ export default function AvaliacoesList() {
             } satisfies GridColDef<Avaliacao>,
           ]),
     ],
-    [academiaId, base, deleteMutation, isCliente],
+    [jwtAcademiaId, academiaSlug, deleteMutation, isCliente],
   );
 
   function onRowClick(params: GridRowParams, event: MouseEvent) {
-    if (isCliente) return;
     const target = event.target as HTMLElement;
     if (target.closest(".tableActions, a, button, [role='button']")) return;
-    navigate(editPath(params.row.id));
+    navigate(showPath(params.row.id));
   }
 
   const loadError = error as { message?: string } | null;
@@ -164,7 +172,7 @@ export default function AvaliacoesList() {
         </Alert>
       ) : null}
 
-      {!academiaId ? (
+      {!hasAcademia ? (
         <Alert severity="info" sx={{ mb: 2, flexShrink: 0 }}>
           Selecione uma academia para listar avaliações.
         </Alert>
@@ -193,8 +201,8 @@ export default function AvaliacoesList() {
                     color="success"
                     sx={{ width: 140, height: 40 }}
                     startIcon={<Icon name="mdi:plus" />}
-                    onClick={() => navigate(`${base}/avaliacoes/add`)}
-                    disabled={!academiaId}
+                    onClick={() => navigate(LINK("/avaliacoes/add"))}
+                    disabled={!hasAcademia}
                   >
                     Adicionar
                   </Button>

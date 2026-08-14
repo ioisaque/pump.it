@@ -46,22 +46,15 @@ export default function Select({
   ...rest
 }: SelectProps) {
   const selectRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
-  const catalogOptionsRef = useRef(catalogOptions);
-  catalogOptionsRef.current = catalogOptions;
   const { fieldName, defaultValue, registerField, error } = useField(name);
   const [value, setValue] = useState(() => (defaultValue != null ? String(defaultValue) : ""));
   const valueRef = useRef(value);
   valueRef.current = value;
 
-  const [catalogAddon, setCatalogAddon] = useState<InputGroupAddonProps>(() =>
-    flagCatalogAddonFromValue(defaultValue, catalogOptions),
+  const catalogAddon = useMemo(
+    () => flagCatalogAddonFromValue(value || defaultValue, catalogOptions),
+    [value, defaultValue, catalogOptions],
   );
-
-  useEffect(() => {
-    if (catalogOptions) {
-      setCatalogAddon(flagCatalogAddonFromValue(valueRef.current || defaultValue, catalogOptions));
-    }
-  }, [defaultValue, catalogOptions]);
 
   const catalogPrepend = useMemo(
     () => (catalogOptions ? <InputGroupAddon position="start" {...catalogAddon} /> : undefined),
@@ -83,25 +76,16 @@ export default function Select({
         const v = nextValue == null ? "" : String(nextValue);
         setValue(v);
         if (ref.current) ref.current.value = v;
-        if (catalogOptionsRef.current) {
-          setCatalogAddon(flagCatalogAddonFromValue(v, catalogOptionsRef.current));
-        }
       },
       clearValue: (ref) => {
         setValue("");
         if (ref.current) ref.current.value = "";
-        if (catalogOptionsRef.current) {
-          setCatalogAddon(flagCatalogAddonFromValue("", catalogOptionsRef.current));
-        }
       },
     });
   }, [fieldName, registerField]);
 
   function handleChange(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
     setValue(event.target.value);
-    if (catalogOptions) {
-      setCatalogAddon(flagCatalogAddonFromValue(event.target.value, catalogOptions));
-    }
     onChange?.(event);
   }
 

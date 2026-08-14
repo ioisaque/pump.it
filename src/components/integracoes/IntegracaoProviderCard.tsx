@@ -3,9 +3,9 @@ import Chip from "components/Chip";
 import Icon from "components/Icon";
 import IntegracaoContaSyncPanel from "components/integracoes/IntegracaoContaSyncPanel";
 import { IntegracaoProviderSummary } from "domain/integracoes/types";
-import useTenantBase from "hooks/useTenantBase";
 import { ReactNode } from "react";
 import { Link as RouterLink } from "react-router-dom";
+import { LINK } from "utils/link";
 
 export type IntegracaoProviderCardProps = {
   provider: IntegracaoProviderSummary;
@@ -15,10 +15,9 @@ export type IntegracaoProviderCardProps = {
 };
 
 export default function IntegracaoProviderCard({ provider, brand, aside, onSync }: IntegracaoProviderCardProps) {
-  const { base } = useTenantBase();
   const { resumo } = provider;
   const pct = resumo.total > 0 ? (resumo.sincronizados / resumo.total) * 100 : 100;
-  const editTo = `${base}/sistema/integracoes/${provider.id}`;
+  const editTo = LINK(`/sistema/integracoes/${provider.id}`);
 
   return (
     <Card sx={{ height: "100%", overflow: "hidden", position: "relative" }}>

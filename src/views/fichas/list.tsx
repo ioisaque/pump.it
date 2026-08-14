@@ -33,11 +33,11 @@ import useAuth from "hooks/useAuth";
 import { useMobileColumnVisibility } from "hooks/useMobileColumnVisibility";
 import { useMobileDialog } from "hooks/useMobileDialog";
 import { useStatusMutation } from "hooks/useStatusMutation";
-import useTenantBase from "hooks/useTenantBase";
 import { MouseEvent, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import { apiBaseUrl } from "services/api";
+import { LINK } from "utils/link";
 
 const HIDE_ON_MOBILE = ["padrao", "descanso"] as const;
 
@@ -150,7 +150,6 @@ function FichaAlunoCard({ ficha, onPlay }: { ficha: Ficha; onPlay: (ficha: Ficha
 
 export default function FichasList() {
   const navigate = useNavigate();
-  const { base } = useTenantBase();
   const { user } = useAuth();
   const isCliente = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
   const queryClient = useQueryClient();
@@ -174,10 +173,10 @@ export default function FichasList() {
   const removeMutation = useMutation({
     mutationFn: (id: number) => deleteFicha(id),
     onSuccess: async () => {
-      toast.success("Ficha excluída.");
+      toast.success("Plano de treino excluído.");
       await queryClient.invalidateQueries({ queryKey: fichasQueryKey });
     },
-    onError: () => toast.error("Não foi possível excluir a ficha."),
+    onError: () => toast.error("Não foi possível excluir o plano de treino."),
   });
 
   const filtered = useMemo(() => {
@@ -248,7 +247,7 @@ export default function FichasList() {
                   <ActionIcon
                     icon="line-md:edit"
                     color="info.main"
-                    to={`${base}/fichas/${params.row.id}/edit`}
+                    to={LINK(`/workout-plans/${params.row.id}/edit`)}
                   />
                   <ActionIcon
                     icon="mdi:delete"
@@ -256,7 +255,7 @@ export default function FichasList() {
                     to="#delete"
                     onClick={(e) => {
                       e.preventDefault();
-                      if (window.confirm(`Excluir ficha "${params.row.nome}"?`)) {
+                      if (window.confirm(`Excluir plano "${params.row.nome}"?`)) {
                         removeMutation.mutate(params.row.id);
                       }
                     }}
@@ -266,14 +265,14 @@ export default function FichasList() {
             } satisfies GridColDef<Ficha>,
           ]),
     ],
-    [base, isCliente, removeMutation, toggleStatusMutation.mutate],
+    [isCliente, removeMutation, toggleStatusMutation.mutate],
   );
 
   function onRowClick(params: GridRowParams, event: MouseEvent) {
     if (isCliente) return;
     const target = event.target as HTMLElement;
     if (target.closest(".tableActions, a, button, [role='button']")) return;
-    navigate(`${base}/fichas/${params.row.id}/edit`);
+    navigate(LINK(`/workout-plans/${params.row.id}/edit`));
   }
 
   const loadError = error as { message?: string } | null;
@@ -325,7 +324,7 @@ export default function FichasList() {
                       <ToggleButton value="todas">Todas</ToggleButton>
                     </ToggleButtonGroup>
                     <Button
-                      onClick={() => navigate(`${base}/fichas/add`)}
+                      onClick={() => navigate(LINK("/workout-plans/add"))}
                       variant="contained"
                       color="success"
                       sx={{ width: 140, height: 40 }}
@@ -355,7 +354,7 @@ export default function FichasList() {
             <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
               {filtered.length === 0 ? (
                 <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: "center" }}>
-                  Nenhuma ficha vinculada.
+                  Nenhum plano de treino vinculado.
                 </Typography>
               ) : (
                 <Stack spacing={2} sx={{ pb: 1 }}>
@@ -396,7 +395,7 @@ export default function FichasList() {
                 variant="contained"
                 onClick={() => {
                   if (!treinoFicha) return;
-                  navigate(`${base}/fichas/${treinoFicha.id}/treino?dia=${dia}`);
+                  navigate(LINK(`/workout-plans/${treinoFicha.id}/treino`, { dia }));
                   setTreinoFicha(null);
                 }}
                 sx={{

@@ -4,14 +4,17 @@ import { findAcademiaPublic } from "api/academias";
 import { SignInStyles } from "assets/css/auth";
 import { BlobGreen, BlobRed, BlobYellow } from "assets/css/main";
 import UserAvatar from "components/UserAvatar";
+import { User } from "contexts/AuthContext";
 import useAuth from "hooks/useAuth";
+import jwtDecode from "jwt-decode";
 import { useLayoutEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { HTTP_RESPONSE } from "services/api";
 import { applyAppChrome, applyPageChrome } from "utils/app-chrome";
+import { LINK } from "utils/link";
 
 export default function SignInPage() {
-  const { logIn } = useAuth();
+  const { logIn, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const { academiaSlug } = useParams();
   const [response, setResponse] = useState<HTTP_RESPONSE | null>(null);
@@ -63,8 +66,17 @@ export default function SignInPage() {
     setResponse({ status: result.status, message: result.message, data: result.data });
 
     if (result.status >= 200 && result.status < 300) {
-      navigate(academiaSlug ? `/${academiaSlug}/` : "/plataforma/academias", { replace: true });
+      const token = (result.data as { access_token?: string } | undefined)?.access_token;
+      const slug = token ? jwtDecode<User>(token).academia_slug : undefined;
+      const homeSlug = slug || academiaSlug;
+      navigate(homeSlug ? LINK("/", undefined, homeSlug) : LINK("/plataforma/academias"), { replace: true });
     }
+  }
+
+  if (isAuthenticated) {
+    if (user?.academia_slug) return <Navigate to={LINK("/", undefined, user.academia_slug)} replace />;
+    if (Number(user?.academia_id) > 0) return <Navigate to={LINK("/")} replace />;
+    return <Navigate to={LINK("/plataforma/academias")} replace />;
   }
 
   return (

@@ -5,11 +5,13 @@ import { Form } from "@unform/web";
 import { addAcademia } from "api/academias";
 import axios from "axios";
 import AcademiaForm from "components/academias/AcademiaForm";
+import FotoCropDialog from "components/FotoCropDialog";
 import Icon from "components/Icon";
 import EntityHeader from "components/layout/EntityHeader";
 import { ChangeEvent, Fragment, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { LINK } from "utils/link";
 import {
     academiaToFormData,
     buildAcademiaPayload,
@@ -22,8 +24,11 @@ export default function AcademiaAddPage() {
   const formRef = useRef<FormHandles>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const logoObjectUrlRef = useRef<string | null>(null);
+  const cropSrcRef = useRef<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropFileName, setCropFileName] = useState("logo.jpg");
   const [saving, setSaving] = useState(false);
 
   const initialData = useMemo(() => buildEmptyAcademiaFormInitialData(), []);
@@ -33,6 +38,10 @@ export default function AcademiaAddPage() {
       if (logoObjectUrlRef.current) {
         URL.revokeObjectURL(logoObjectUrlRef.current);
         logoObjectUrlRef.current = null;
+      }
+      if (cropSrcRef.current) {
+        URL.revokeObjectURL(cropSrcRef.current);
+        cropSrcRef.current = null;
       }
     };
   }, []);
@@ -48,6 +57,25 @@ export default function AcademiaAddPage() {
     setLogoPreview(objectUrl);
   }
 
+  function openLogoCrop(file: File) {
+    if (cropSrcRef.current) {
+      URL.revokeObjectURL(cropSrcRef.current);
+      cropSrcRef.current = null;
+    }
+    const url = URL.createObjectURL(file);
+    cropSrcRef.current = url;
+    setCropSrc(url);
+    setCropFileName(file.name || "logo.jpg");
+  }
+
+  function closeLogoCrop() {
+    if (cropSrcRef.current) {
+      URL.revokeObjectURL(cropSrcRef.current);
+      cropSrcRef.current = null;
+    }
+    setCropSrc(null);
+  }
+
   function onLogoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -56,7 +84,7 @@ export default function AcademiaAddPage() {
       toast.error("Selecione um arquivo de imagem.");
       return;
     }
-    applyLogoFile(file);
+    openLogoCrop(file);
   }
 
   function onLogoDrop(file: File) {
@@ -64,7 +92,7 @@ export default function AcademiaAddPage() {
       toast.error("Selecione um arquivo de imagem.");
       return;
     }
-    applyLogoFile(file);
+    openLogoCrop(file);
   }
 
   async function handleSubmit(data: Record<string, unknown>) {
@@ -82,8 +110,8 @@ export default function AcademiaAddPage() {
       toast.success("Academia criada");
       await queryClient.invalidateQueries({ queryKey: ["academias"] });
       const id = res.academia?.id;
-      if (id) navigate(`/plataforma/academias/${id}/edit`, { replace: true });
-      else navigate("/plataforma/academias", { replace: true });
+      if (id) navigate(LINK(`/plataforma/academias/${id}/edit`), { replace: true });
+      else navigate(LINK("/plataforma/academias"), { replace: true });
     } catch (err) {
       const msg = axios.isAxiosError(err) ? err.response?.data?.message : null;
       toast.error(typeof msg === "string" && msg.trim() ? msg : "Falha ao criar");
@@ -122,7 +150,7 @@ export default function AcademiaAddPage() {
               Salvar
             </Button>
             <Button
-              onClick={() => navigate("/plataforma/academias")}
+              onClick={() => navigate(LINK("/plataforma/academias"))}
               variant="contained"
               color="quinzel"
               sx={{ width: 140, height: 40 }}
@@ -144,6 +172,13 @@ export default function AcademiaAddPage() {
         onPointerLeaveCapture={undefined}
       >
         <input ref={logoInputRef} type="file" accept="image/*" hidden onChange={onLogoChange} />
+        <FotoCropDialog
+          open={Boolean(cropSrc)}
+          imageSrc={cropSrc}
+          fileName={cropFileName}
+          onClose={closeLogoCrop}
+          onConfirm={applyLogoFile}
+        />
         <AcademiaForm
           formRef={formRef}
           logoPreview={logoPreview}

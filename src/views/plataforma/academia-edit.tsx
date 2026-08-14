@@ -19,6 +19,7 @@ import { deleteAcademia, findAcademia, saveAcademia } from "api/academias";
 import axios from "axios";
 import AcademiaForm from "components/academias/AcademiaForm";
 import Chip from "components/Chip";
+import FotoCropDialog from "components/FotoCropDialog";
 import Icon from "components/Icon";
 import LastUpdated from "components/LastUpdated";
 import EntityHeader from "components/layout/EntityHeader";
@@ -27,8 +28,8 @@ import { ChangeEvent, Fragment, useEffect, useMemo, useRef, useState } from "rea
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiOrigin } from "services/api";
+import { LINK } from "utils/link";
 import {
-    academiaAddressQuery,
     academiaToFormData,
     buildAcademiaFormInitialData,
     buildAcademiaPayload,
@@ -45,7 +46,7 @@ export default function AcademiaEditPage() {
   const academiaId = Number(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const listPath = "/plataforma/academias";
+  const listPath = LINK("/plataforma/academias");
   const deleteDialog = useMobileDialog("sm");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -54,8 +55,11 @@ export default function AcademiaEditPage() {
   const formRef = useRef<FormHandles>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const logoObjectUrlRef = useRef<string | null>(null);
+  const cropSrcRef = useRef<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropFileName, setCropFileName] = useState("logo.jpg");
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ["academias", academiaId],
@@ -65,11 +69,11 @@ export default function AcademiaEditPage() {
   });
 
   const academia = data?.academia;
+  const stats = data?.stats;
   const formInitialData = useMemo(
     () => (academia ? buildAcademiaFormInitialData(academia) : {}),
     [academia],
   );
-  const mapQuery = useMemo(() => (academia ? academiaAddressQuery(academia) : null), [academia]);
 
   const codigo = formatAcademiaShortId(id ?? "");
   const deleteConfirmed = deleteConfirmation.trim() === codigo;
@@ -100,6 +104,10 @@ export default function AcademiaEditPage() {
       if (logoObjectUrlRef.current) {
         URL.revokeObjectURL(logoObjectUrlRef.current);
         logoObjectUrlRef.current = null;
+      }
+      if (cropSrcRef.current) {
+        URL.revokeObjectURL(cropSrcRef.current);
+        cropSrcRef.current = null;
       }
     };
   }, []);
@@ -148,6 +156,25 @@ export default function AcademiaEditPage() {
     setLogoPreview(objectUrl);
   }
 
+  function openLogoCrop(file: File) {
+    if (cropSrcRef.current) {
+      URL.revokeObjectURL(cropSrcRef.current);
+      cropSrcRef.current = null;
+    }
+    const url = URL.createObjectURL(file);
+    cropSrcRef.current = url;
+    setCropSrc(url);
+    setCropFileName(file.name || "logo.jpg");
+  }
+
+  function closeLogoCrop() {
+    if (cropSrcRef.current) {
+      URL.revokeObjectURL(cropSrcRef.current);
+      cropSrcRef.current = null;
+    }
+    setCropSrc(null);
+  }
+
   function onLogoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -156,7 +183,7 @@ export default function AcademiaEditPage() {
       toast.error("Selecione um arquivo de imagem.");
       return;
     }
-    applyLogoFile(file);
+    openLogoCrop(file);
   }
 
   function onLogoDrop(file: File) {
@@ -164,7 +191,7 @@ export default function AcademiaEditPage() {
       toast.error("Selecione um arquivo de imagem.");
       return;
     }
-    applyLogoFile(file);
+    openLogoCrop(file);
   }
 
   async function handleSubmit(data: Record<string, unknown>) {
@@ -247,7 +274,7 @@ export default function AcademiaEditPage() {
                 variant="contained"
                 color="secondary"
                 sx={btnSx}
-                href={`/${academia.slug}/`}
+                href={LINK("/", undefined, academia.slug)}
                 aria-label="Abrir sistema"
               >
                 <Icon name="majesticons:open" width={30} />
@@ -366,10 +393,17 @@ export default function AcademiaEditPage() {
         onPointerLeaveCapture={undefined}
       >
         <input ref={logoInputRef} type="file" accept="image/*" hidden onChange={onLogoChange} />
+        <FotoCropDialog
+          open={Boolean(cropSrc)}
+          imageSrc={cropSrc}
+          fileName={cropFileName}
+          onClose={closeLogoCrop}
+          onConfirm={applyLogoFile}
+        />
         <AcademiaForm
           formRef={formRef}
           showStatus
-          mapQuery={mapQuery}
+          stats={stats}
           logoPreview={logoPreview}
           onPickLogo={() => logoInputRef.current?.click()}
           onLogoDrop={onLogoDrop}

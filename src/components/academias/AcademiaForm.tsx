@@ -1,8 +1,10 @@
-import { Box, Grid, MenuItem, Typography } from "@mui/material";
+import { Box, Grid, MenuItem, Stack, Typography } from "@mui/material";
 import { FormHandles } from "@unform/core";
+import { AcademiaStats } from "api/academias";
 import Input from "components/form/Input";
 import Select from "components/form/Select";
 import GoogleMapEmbed from "components/GoogleMapEmbed";
+import Icon from "components/Icon";
 import UserAvatar from "components/UserAvatar";
 import { BR_UF } from "constants/brazil";
 import { useCepAutofill } from "hooks/useCepAutofill";
@@ -17,6 +19,7 @@ type AcademiaFormProps = {
   onLogoDrop?: (file: File) => void;
   showStatus?: boolean;
   mapQuery?: string | null;
+  stats?: AcademiaStats | null;
 };
 
 export default function AcademiaForm({
@@ -26,6 +29,7 @@ export default function AcademiaForm({
   onLogoDrop,
   showStatus = false,
   mapQuery = null,
+  stats = null,
 }: AcademiaFormProps) {
   const { cepLoading, buscarCep, onCepChange } = useCepAutofill(formRef);
   const [liveMapQuery, setLiveMapQuery] = useState<string | null>(null);
@@ -147,15 +151,52 @@ export default function AcademiaForm({
         </Grid>
       </Box>
 
-      <Box sx={pessoaSectionSx}>
-        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Localização
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          O mapa usa o endereço preenchido acima quando disponível.
-        </Typography>
-        <GoogleMapEmbed query={liveMapQuery ?? mapQuery} />
-      </Box>
+      {stats ? (
+        <Box sx={pessoaSectionSx}>
+          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            Estatísticas
+          </Typography>
+          <Grid container spacing={1.5}>
+            {(
+              [
+                { label: "Pessoas online", value: stats.pessoas_online, icon: "mdi:circle", color: "#33CC66" },
+                { label: "Alunos ativos", value: stats.alunos, icon: "mdi:account-group", color: "#0076F3" },
+                { label: "Personais", value: stats.personais, icon: "mdi:whistle", color: "#9900CC" },
+                { label: "Avaliações (mês)", value: stats.avaliacoes_mes, icon: "mdi:clipboard-text", color: "#FFD22B" },
+                { label: "Check-ins (mês)", value: stats.checkins_mes, icon: "mdi:login", color: "#FF5356" },
+              ] as const
+            ).map((card) => (
+              <Grid item xs={12} sm={6} md={4} key={card.label}>
+                <Box sx={{ bgcolor: `${card.color}22`, borderRadius: 2, p: 1.5 }}>
+                  <Stack direction="row" alignItems="center" spacing={1}>
+                    <Box sx={{ color: card.color, display: "flex" }}>
+                      <Icon name={card.icon} width={28} height={28} />
+                    </Box>
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {card.label}
+                      </Typography>
+                      <Typography variant="h6" fontWeight={800} lineHeight={1.2}>
+                        {card.value}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Box>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      ) : (
+        <Box sx={pessoaSectionSx}>
+          <Typography variant="subtitle1" fontWeight={600} gutterBottom>
+            Localização
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            O mapa usa o endereço preenchido acima quando disponível.
+          </Typography>
+          <GoogleMapEmbed query={liveMapQuery ?? mapQuery} />
+        </Box>
+      )}
     </Fragment>
   );
 }

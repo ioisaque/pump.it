@@ -12,6 +12,7 @@ import SearchInput from "components/SearchField";
 import { useStatusMutation } from "hooks/useStatusMutation";
 import { MouseEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { LINK } from "utils/link";
 
 type AcademiaRow = {
   id: number;
@@ -20,6 +21,7 @@ type AcademiaRow = {
   status: string;
   cidade?: string | null;
   estado?: string | null;
+  alunos_ativos?: number;
 };
 
 export default function AcademiasPage() {
@@ -71,6 +73,13 @@ export default function AcademiasPage() {
       { field: "nome", headerName: "Nome", flex: 1, minWidth: 160 },
       { field: "slug", headerName: "Slug", flex: 1, minWidth: 120 },
       {
+        field: "alunos_ativos",
+        headerName: "Alunos",
+        width: 110,
+        type: "number",
+        valueGetter: (_v, row) => row.alunos_ativos ?? 0,
+      },
+      {
         field: "cidade",
         headerName: "Cidade",
         flex: 1,
@@ -89,7 +98,7 @@ export default function AcademiasPage() {
         sortable: false,
         renderCell: (params) => (
           <TableActions>
-            <ActionIcon icon="majesticons:open" color="info.main" to={`/${params.row.slug}/`} />
+            <ActionIcon icon="majesticons:open" color="info.main" to={LINK("/", undefined, params.row.slug)} />
           </TableActions>
         ),
       },
@@ -100,7 +109,7 @@ export default function AcademiasPage() {
   function onRowClick(params: GridRowParams, event: MouseEvent) {
     const target = event.target as HTMLElement;
     if (target.closest(".tableActions, a, button, [role='button']")) return;
-    navigate(`/plataforma/academias/${params.row.id}/edit`);
+    navigate(LINK(`/plataforma/academias/${params.row.id}/edit`));
   }
 
   return (
@@ -118,7 +127,7 @@ export default function AcademiasPage() {
             variant="contained"
             color="success"
             startIcon={<Icon name="mdi:plus" />}
-            onClick={() => navigate("/plataforma/academias/add")}
+            onClick={() => navigate(LINK("/plataforma/academias/add"))}
             sx={{ height: 40 }}
           >
             Nova

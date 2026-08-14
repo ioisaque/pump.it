@@ -19,11 +19,10 @@ import EntityHeader from "components/layout/EntityHeader";
 import { NOTIFY_THEME } from "domain/integracoes/constants";
 import { NotifyConfigPublic } from "domain/integracoes/types";
 import { useState } from "react";
-import useTenantBase from "hooks/useTenantBase";
 import { Link as RouterLink } from "react-router-dom";
+import { LINK } from "utils/link";
 
 export default function NotifyIntegracaoPage() {
-  const { base } = useTenantBase();
   const [wizardOpen, setWizardOpen] = useState(false);
   const theme = NOTIFY_THEME;
 
@@ -60,7 +59,7 @@ export default function NotifyIntegracaoPage() {
             </Button>
             <Button
               component={RouterLink}
-              to={`${base}/sistema/integracoes`}
+              to={LINK("/sistema/integracoes")}
               variant="contained"
               color="quinzel"
               sx={{ width: 140, height: 40 }}

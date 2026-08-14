@@ -1,4 +1,4 @@
-import { Avaliacao, AvaliacaoFormValues, AvaliacaoMedidas } from "./types";
+import { Avaliacao, AvaliacaoFormValues, AvaliacaoMedidas, MEDIDA_KEYS } from "./types";
 
 export function formatAvaliacaoData(value: string | null | undefined): string {
   if (!value) return "—";
@@ -13,6 +13,44 @@ export function calcImc(pesoKg?: number | null, alturaCm?: number | null): numbe
   return Math.round((pesoKg / (m * m)) * 10) / 10;
 }
 
+export function classificacaoImc(imc: number | null): string | null {
+  if (imc == null) return null;
+  if (imc < 18.5) return "Magreza";
+  if (imc < 25) return "Eutrofia";
+  if (imc < 30) return "Sobrepeso";
+  if (imc < 35) return "Obesidade grau I";
+  if (imc < 40) return "Obesidade grau II";
+  return "Obesidade grau III";
+}
+
+export function interpretacaoImc(imc: number | null): string {
+  const cls = classificacaoImc(imc);
+  if (imc == null || !cls) return "Informe peso e altura para calcular o IMC.";
+  if (cls === "Eutrofia") {
+    return `IMC ${imc} (${cls}): faixa associada a menor risco metabólico na classificação da OMS. Não substitui avaliação clínica.`;
+  }
+  if (cls === "Sobrepeso") {
+    return `IMC ${imc} (${cls}): acima da faixa de eutrofia. Circunferência da cintura e relação cintura/quadril ajudam a contextualizar. Não é diagnóstico.`;
+  }
+  if (cls === "Magreza") {
+    return `IMC ${imc} (${cls}): abaixo da faixa de eutrofia. Vale acompanhar composição e orientação profissional. Não é diagnóstico.`;
+  }
+  return `IMC ${imc} (${cls}): classificação da OMS para índice de massa corporal. Use junto das perimetrias; não é diagnóstico médico.`;
+}
+
+export function calcCinturaQuadril(cintura?: number | null, quadril?: number | null): number | null {
+  if (cintura == null || quadril == null || quadril <= 0) return null;
+  return Math.round((cintura / quadril) * 100) / 100;
+}
+
+export function interpretacaoCq(cq: number | null): string | null {
+  if (cq == null) return null;
+  if (cq >= 0.9) {
+    return `Relação cintura/quadril ${cq}: em homens, valores ≥ 0,90 costumam indicar maior acúmulo abdominal (referência OMS). Não é diagnóstico.`;
+  }
+  return `Relação cintura/quadril ${cq}: abaixo do limiar usual de 0,90 para homens (OMS). Não é diagnóstico.`;
+}
+
 function numOrNull(value: unknown): number | null {
   if (value == null || value === "") return null;
   const n = Number(value);
@@ -20,15 +58,11 @@ function numOrNull(value: unknown): number | null {
 }
 
 export function buildMedidasFromForm(data: AvaliacaoFormValues): AvaliacaoMedidas {
-  return {
-    peito: numOrNull(data.peito),
-    cintura: numOrNull(data.cintura),
-    quadril: numOrNull(data.quadril),
-    braco_dir: numOrNull(data.braco_dir),
-    braco_esq: numOrNull(data.braco_esq),
-    coxa_dir: numOrNull(data.coxa_dir),
-    coxa_esq: numOrNull(data.coxa_esq),
-  };
+  const medidas: AvaliacaoMedidas = {};
+  for (const key of MEDIDA_KEYS) {
+    medidas[key] = numOrNull(data[key]);
+  }
+  return medidas;
 }
 
 export function buildAvaliacaoPayload(data: AvaliacaoFormValues) {
@@ -45,19 +79,16 @@ export function buildAvaliacaoPayload(data: AvaliacaoFormValues) {
 
 export function avaliacaoToFormValues(row: Avaliacao): AvaliacaoFormValues {
   const m = row.medidas ?? {};
-  return {
+  const values: AvaliacaoFormValues = {
     academia_id: row.academia_id,
     id_pessoa: row.id_pessoa,
     data: row.data ?? "",
     peso_kg: row.peso_kg ?? "",
     altura_cm: row.altura_cm ?? "",
     observacoes: row.observacoes ?? "",
-    peito: m.peito ?? "",
-    cintura: m.cintura ?? "",
-    quadril: m.quadril ?? "",
-    braco_dir: m.braco_dir ?? "",
-    braco_esq: m.braco_esq ?? "",
-    coxa_dir: m.coxa_dir ?? "",
-    coxa_esq: m.coxa_esq ?? "",
   };
+  for (const key of MEDIDA_KEYS) {
+    values[key] = m[key] ?? "";
+  }
+  return values;
 }

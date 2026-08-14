@@ -8,16 +8,15 @@ import EntityHeader from "components/layout/EntityHeader";
 import { buildAvaliacaoPayload } from "domain/avaliacoes/formatters";
 import { AvaliacaoFormValues } from "domain/avaliacoes/types";
 import useAuth from "hooks/useAuth";
-import useTenantBase from "hooks/useTenantBase";
 import { Fragment, useMemo, useRef } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
+import { LINK } from "utils/link";
 
 const BTN_140 = { width: 140, height: 40 } as const;
 
 export default function AvaliacaoAdd() {
   const navigate = useNavigate();
-  const { base } = useTenantBase();
   const queryClient = useQueryClient();
   const formRef = useRef<FormHandles>(null);
   const { user } = useAuth();
@@ -45,10 +44,13 @@ export default function AvaliacaoAdd() {
         toast.error("Informe a data.");
         return;
       }
-      await addAvaliacao(payload);
+      await addAvaliacao({
+        ...payload,
+        academia_id: payload.academia_id ?? (user?.academia_id && user.academia_id > 0 ? user.academia_id : undefined),
+      });
       toast.success("Avaliação criada.");
       await queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
-      navigate(`${base}/avaliacoes`);
+      navigate(LINK("/avaliacoes"));
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       toast.error(message || "Falha ao criar avaliação.");

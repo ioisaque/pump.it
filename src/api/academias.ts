@@ -19,10 +19,19 @@ export type Academia = {
   cidade: string | null;
   estado: string | null;
   complemento: string | null;
+  alunos_ativos?: number;
   criado_por: number;
   criado_em: string;
   alterado_por: number;
   alterado_em: string | null;
+};
+
+export type AcademiaStats = {
+  pessoas_online: number;
+  alunos: number;
+  personais: number;
+  avaliacoes_mes: number;
+  checkins_mes: number;
 };
 
 export async function listAcademias() {
@@ -31,7 +40,7 @@ export async function listAcademias() {
 }
 
 export async function findAcademia(id: number) {
-  const { data } = await api.get<{ academia: Academia }>(`academias/${id}`);
+  const { data } = await api.get<{ academia: Academia; stats: AcademiaStats }>(`academias/${id}`);
   return data;
 }
 

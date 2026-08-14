@@ -15,6 +15,7 @@ import { MENSALIDADE_STATUS_LABEL, Mensalidade } from "domain/mensalidades/types
 import { ALUNO_NIVEL_MAX } from "domain/pessoas/constants";
 import useAuth from "hooks/useAuth";
 import { useMobileColumnVisibility } from "hooks/useMobileColumnVisibility";
+import useTenantBase from "hooks/useTenantBase";
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { apiBaseUrl } from "services/api";
@@ -32,7 +33,9 @@ const STATUS_CHIP: Record<string, { color: string; icon: string }> = {
 
 export default function MensalidadesList() {
   const { user } = useAuth();
-  const academiaId = user?.academia_id && user.academia_id > 0 ? user.academia_id : undefined;
+  const { academiaSlug } = useTenantBase();
+  const jwtAcademiaId = user?.academia_id && user.academia_id > 0 ? user.academia_id : undefined;
+  const hasAcademia = Boolean(jwtAcademiaId || academiaSlug);
   const isCliente = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState("all");
@@ -42,19 +45,19 @@ export default function MensalidadesList() {
   const columnVisibilityModel = useMobileColumnVisibility(HIDE_ON_MOBILE);
 
   const { data, isLoading, isFetching, error, refetch } = useQuery({
-    queryKey: ["mensalidades", academiaId ?? "none", statusFilter, isCliente ? user?.id : "all"],
+    queryKey: ["mensalidades", jwtAcademiaId ?? academiaSlug ?? "none", statusFilter, isCliente ? user?.id : "all"],
     queryFn: () =>
       listMensalidades({
-        academia_id: academiaId,
+        academia_id: jwtAcademiaId,
         id_pessoa: isCliente ? user?.id : undefined,
         status: statusFilter === "all" ? undefined : statusFilter,
       }),
-    enabled: !!academiaId,
+    enabled: hasAcademia,
     retry: 1,
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteMensalidade(id, academiaId),
+    mutationFn: (id: number) => deleteMensalidade(id, jwtAcademiaId),
     onSuccess: async () => {
       toast.success("Mensalidade excluída.");
       await queryClient.invalidateQueries({ queryKey: ["mensalidades"] });
@@ -64,7 +67,7 @@ export default function MensalidadesList() {
 
   const checkoutMutation = useMutation({
     mutationFn: ({ id, provider }: { id: number; provider: "asaas" | "mercadopago" }) =>
-      checkoutMensalidade(id, provider, academiaId),
+      checkoutMensalidade(id, provider, jwtAcademiaId),
     onSuccess: (res) => {
       if (res.url) {
         window.open(res.url, "_blank", "noopener,noreferrer");
@@ -216,7 +219,7 @@ export default function MensalidadesList() {
         </Alert>
       ) : null}
 
-      {!academiaId ? (
+      {!hasAcademia ? (
         <Alert severity="info" sx={{ mb: 2, flexShrink: 0 }}>
           Selecione uma academia para listar mensalidades.
         </Alert>
@@ -265,7 +268,7 @@ export default function MensalidadesList() {
                     setEditing(null);
                     setFormOpen(true);
                   }}
-                  disabled={!academiaId}
+                  disabled={!hasAcademia}
                 >
                   Adicionar
                 </Button>
@@ -299,7 +302,7 @@ export default function MensalidadesList() {
       <MensalidadeFormDialog
         open={formOpen}
         onClose={() => setFormOpen(false)}
-        academiaId={academiaId}
+        academiaId={jwtAcademiaId}
         initial={editing}
       />
       )}

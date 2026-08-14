@@ -38,7 +38,7 @@ const GROUPS: TabelaGroup[] = [
         id: "niveis",
         flag: "niveis",
         title: "Níveis",
-        description: "Hierarquia e classificação de clientes",
+        description: "Hierarquia e classificação de pessoas",
         icon: "mdi:stairs",
         gridMd: 6,
       },

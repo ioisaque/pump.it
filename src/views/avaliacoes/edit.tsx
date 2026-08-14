@@ -8,10 +8,10 @@ import EntityHeader from "components/layout/EntityHeader";
 import { avaliacaoToFormValues, buildAvaliacaoPayload } from "domain/avaliacoes/formatters";
 import { AvaliacaoFormValues } from "domain/avaliacoes/types";
 import useAuth from "hooks/useAuth";
-import useTenantBase from "hooks/useTenantBase";
 import { Fragment, useMemo, useRef } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { LINK } from "utils/link";
 
 const BTN_140 = { width: 140, height: 40 } as const;
 
@@ -20,7 +20,6 @@ export default function AvaliacaoEdit() {
   const [searchParams] = useSearchParams();
   const avaliacaoId = Number(id);
   const navigate = useNavigate();
-  const { base } = useTenantBase();
   const queryClient = useQueryClient();
   const formRef = useRef<FormHandles>(null);
   const { user } = useAuth();
@@ -46,7 +45,7 @@ export default function AvaliacaoEdit() {
     onSuccess: async () => {
       toast.success("Avaliação salva.");
       await queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
-      navigate(`${base}/avaliacoes`);
+      navigate(LINK("/avaliacoes"));
     },
     onError: (err: unknown) => {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -79,7 +78,7 @@ export default function AvaliacaoEdit() {
           sx={{ mt: 2, width: 140, height: 40 }}
           variant="contained"
           color="quinzel"
-          onClick={() => navigate(`${base}/avaliacoes`)}
+          onClick={() => navigate(LINK("/avaliacoes"))}
         >
           <Icon name="undo" />
           Voltar

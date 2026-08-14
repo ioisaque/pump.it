@@ -17,18 +17,19 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormHandles } from "@unform/core";
 import { Form } from "@unform/web";
-import { listAcademias } from "api/academias";
+import { findAcademia, findAcademiaPublic, listAcademias } from "api/academias";
 import { desvincularFichaAluno, listFichas, vincularFichaAluno } from "api/fichas";
 import { deletePessoa } from "api/pessoas";
 import axios from "axios";
 import Chip from "components/Chip";
+import FotoCropDialog from "components/FotoCropDialog";
 import Icon from "components/Icon";
 import LastUpdated from "components/LastUpdated";
 import EntityHeader from "components/layout/EntityHeader";
 import EditForm from "components/pessoas/EditForm";
-import { MASTER_NIVEL_ID } from "domain/auth/constants";
 import { formatPadraoLabel } from "domain/fichas/formatters";
 import { Ficha } from "domain/fichas/types";
+import { PESSOA_NIVEL } from "domain/pessoas/constants";
 import { resolveFlags } from "domain/tabelas/types";
 import useAuth from "hooks/useAuth";
 import { useFlagCatalogs } from "hooks/useFlagCatalogs";
@@ -39,6 +40,7 @@ import { ChangeEvent, Fragment, useEffect, useMemo, useRef, useState } from "rea
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import { apiOrigin } from "services/api";
+import { LINK } from "utils/link";
 import { buildPessoaFormInitialData, submitPessoaUpdate } from "utils/pessoas/form";
 import { pessoaSectionSx } from "utils/pessoas/styles";
 
@@ -49,7 +51,6 @@ function formatPessoaShortId(id: string | number): string {
 }
 
 function PessoaFichas({ pessoaId }: { pessoaId: number }) {
-  const { base } = useTenantBase();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [modeloId, setModeloId] = useState("");
@@ -67,17 +68,17 @@ function PessoaFichas({ pessoaId }: { pessoaId: number }) {
   const vincular = useMutation({
     mutationFn: (fichaId: number) => vincularFichaAluno(fichaId, pessoaId),
     onSuccess: async () => {
-      toast.success("Ficha vinculada.");
+      toast.success("Plano vinculado.");
       setModeloId("");
       await queryClient.invalidateQueries({ queryKey: ["fichas", "pessoa", pessoaId] });
     },
-    onError: () => toast.error("Não foi possível vincular a ficha."),
+    onError: () => toast.error("Não foi possível vincular o plano."),
   });
 
   const desvincular = useMutation({
     mutationFn: (fichaId: number) => desvincularFichaAluno(fichaId, pessoaId),
     onSuccess: async () => {
-      toast.success("Ficha desvinculada.");
+      toast.success("Plano desvinculado.");
       await queryClient.invalidateQueries({ queryKey: ["fichas", "pessoa", pessoaId] });
     },
     onError: () => toast.error("Não foi possível desvincular."),
@@ -90,7 +91,7 @@ function PessoaFichas({ pessoaId }: { pessoaId: number }) {
     <Box sx={{ ...pessoaSectionSx, mt: 2 }}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" useFlexGap gap={1} sx={{ mb: 2 }}>
         <Typography variant="subtitle1" fontWeight={600}>
-          Fichas
+          Planos de treino
         </Typography>
         <Stack direction="row" spacing={1} alignItems="center">
           <Select
@@ -123,7 +124,7 @@ function PessoaFichas({ pessoaId }: { pessoaId: number }) {
         <Skeleton variant="rounded" height={48} />
       ) : fichas.length === 0 ? (
         <Typography variant="body2" color="text.secondary">
-          Nenhuma ficha vinculada. Escolha um modelo acima.
+          Nenhum plano vinculado. Escolha um modelo acima.
         </Typography>
       ) : (
         <Stack spacing={1}>
@@ -150,7 +151,7 @@ function PessoaFichas({ pessoaId }: { pessoaId: number }) {
                   size="small"
                   variant="contained"
                   color="info"
-                  onClick={() => navigate(`${base}/fichas/${ficha.id}/edit?pessoa=${pessoaId}`)}
+                  onClick={() => navigate(LINK(`/workout-plans/${ficha.id}/edit`, { pessoa: pessoaId }))}
                 >
                   Editar
                 </Button>
@@ -175,15 +176,18 @@ function PessoaFichas({ pessoaId }: { pessoaId: number }) {
 function PessoaEdit() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { base } = useTenantBase();
-  const listPath = `${base}/pessoas`;
+  const listPath = LINK("/pessoas");
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { academiaSlug } = useTenantBase();
   const deleteDialog = useMobileDialog("sm");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const canDelete = Number(user?.nivel ?? 0) >= 9;
-  const isMaster = (user?.nivel ?? 0) >= MASTER_NIVEL_ID;
+  const boundAcademiaId = user?.academia_id && user.academia_id > 0 ? user.academia_id : undefined;
+  const lockAcademia = Boolean(academiaSlug);
+  const academiaRequired = lockAcademia || (user?.nivel ?? 0) < PESSOA_NIVEL.APP;
+  const canListAcademias = !lockAcademia && (user?.nivel ?? 0) >= PESSOA_NIVEL.APP;
 
   const {
     data: pessoa,
@@ -199,16 +203,33 @@ function PessoaEdit() {
   const { data: academiasData } = useQuery({
     queryKey: ["academias"],
     queryFn: listAcademias,
-    enabled: isMaster,
+    enabled: canListAcademias,
   });
   const academias = academiasData?.academias ?? [];
+
+  const { data: tenantAcademia } = useQuery({
+    queryKey: ["academia", "self", boundAcademiaId],
+    queryFn: () => findAcademia(boundAcademiaId as number),
+    enabled: lockAcademia && boundAcademiaId != null,
+  });
+  const { data: publicAcademia } = useQuery({
+    queryKey: ["academia", "public", academiaSlug],
+    queryFn: () => findAcademiaPublic(academiaSlug as string),
+    enabled: lockAcademia && !tenantAcademia?.academia.nome,
+  });
+  const academiaNome = lockAcademia
+    ? tenantAcademia?.academia.nome || publicAcademia?.nome || academiaSlug || ""
+    : null;
 
   const formInitialData = useMemo(() => (pessoa ? buildPessoaFormInitialData(pessoa) : {}), [pessoa]);
   const formRef = useRef<FormHandles>(null);
   const fotoInputRef = useRef<HTMLInputElement>(null);
   const fotoObjectUrlRef = useRef<string | null>(null);
+  const cropSrcRef = useRef<string | null>(null);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropFileName, setCropFileName] = useState("foto.jpg");
 
   const codigoPessoa = formatPessoaShortId(id ?? "");
   const deleteConfirmed = deleteConfirmation.trim() === codigoPessoa;
@@ -239,6 +260,10 @@ function PessoaEdit() {
       if (fotoObjectUrlRef.current) {
         URL.revokeObjectURL(fotoObjectUrlRef.current);
         fotoObjectUrlRef.current = null;
+      }
+      if (cropSrcRef.current) {
+        URL.revokeObjectURL(cropSrcRef.current);
+        cropSrcRef.current = null;
       }
     };
   }, []);
@@ -271,6 +296,25 @@ function PessoaEdit() {
     setFotoPreview(objectUrl);
   }
 
+  function openFotoCrop(file: File) {
+    if (cropSrcRef.current) {
+      URL.revokeObjectURL(cropSrcRef.current);
+      cropSrcRef.current = null;
+    }
+    const url = URL.createObjectURL(file);
+    cropSrcRef.current = url;
+    setCropSrc(url);
+    setCropFileName(file.name || "foto.jpg");
+  }
+
+  function closeFotoCrop() {
+    if (cropSrcRef.current) {
+      URL.revokeObjectURL(cropSrcRef.current);
+      cropSrcRef.current = null;
+    }
+    setCropSrc(null);
+  }
+
   function onFotoChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     event.target.value = "";
@@ -279,7 +323,7 @@ function PessoaEdit() {
       toast.error("Selecione um arquivo de imagem.");
       return;
     }
-    applyFotoFile(file);
+    openFotoCrop(file);
   }
 
   function onFotoDrop(file: File) {
@@ -287,7 +331,7 @@ function PessoaEdit() {
       toast.error("Selecione um arquivo de imagem.");
       return;
     }
-    applyFotoFile(file);
+    openFotoCrop(file);
   }
 
   useEffect(() => {
@@ -484,10 +528,17 @@ function PessoaEdit() {
         onPointerLeaveCapture={undefined}
       >
         <input ref={fotoInputRef} type="file" accept="image/*" hidden onChange={onFotoChange} />
+        <FotoCropDialog
+          open={Boolean(cropSrc)}
+          imageSrc={cropSrc}
+          fileName={cropFileName}
+          onClose={closeFotoCrop}
+          onConfirm={applyFotoFile}
+        />
         <EditForm
           formRef={formRef}
           pessoa={pessoa}
-          catalogs={{ origens: allOrigens, etiquetas: allEtiquetas, niveis: allNiveis, academias }}
+          catalogs={{ origens: allOrigens, etiquetas: allEtiquetas, niveis: allNiveis, academias, academiaNome, academiaRequired }}
           fotoPreview={fotoPreview}
           onPickFoto={() => fotoInputRef.current?.click()}
           onFotoDrop={onFotoDrop}

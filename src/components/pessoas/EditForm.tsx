@@ -1,9 +1,10 @@
-import { Box, Grid, MenuItem, Chip as MuiChip, Typography } from "@mui/material";
+import { Box, Grid, MenuItem, Chip as MuiChip, TextField, Typography } from "@mui/material";
 import { FormHandles } from "@unform/core";
 import { Academia } from "api/academias";
 import Chip from "components/Chip";
 import FormDateInput from "components/form/FormDateInput";
 import Input from "components/form/Input";
+import { compactInputRootSx } from "components/form/inputGroupStyles";
 import Select from "components/form/Select";
 import GoogleMapEmbed from "components/GoogleMapEmbed";
 import EntityHeader from "components/layout/EntityHeader";
@@ -20,6 +21,8 @@ export type PessoaFormCatalogs = {
   etiquetas?: Flag[];
   niveis?: Flag[];
   academias?: Academia[];
+  academiaNome?: string | null;
+  academiaRequired?: boolean;
 };
 
 type EditFormProps = {
@@ -39,7 +42,7 @@ export default function EditForm({
   onPickFoto,
   onFotoDrop,
 }: EditFormProps) {
-  const { origens = [], etiquetas = [], niveis = [], academias = [] } = catalogs;
+  const { origens = [], etiquetas = [], niveis = [], academias = [], academiaNome, academiaRequired = true } = catalogs;
   const { cepLoading, buscarCep, onCepChange } = useCepAutofill(formRef);
 
   return (
@@ -80,7 +83,7 @@ export default function EditForm({
           <Grid item xs={12} md={2}>
             <Select name="nivel" label="Nível" catalogOptions={niveis}>
               {niveis.map((n) => (
-                <MenuItem key={n.id} value={n.id}>
+                <MenuItem key={n.id} value={String(n.id)}>
                   {n.nome}
                 </MenuItem>
               ))}
@@ -94,7 +97,7 @@ export default function EditForm({
           <Grid item xs={12} md={2}>
             <Select name="origem" label="Origem" catalogOptions={origens}>
               {origens.map((o) => (
-                <MenuItem key={o.id} value={o.id}>
+                <MenuItem key={o.id} value={String(o.id)}>
                   {o.nome}
                 </MenuItem>
               ))}
@@ -103,7 +106,7 @@ export default function EditForm({
           <Grid item xs={12} md={2}>
             <Select name="etiqueta" label="Etiqueta" catalogOptions={etiquetas}>
               {etiquetas.map((e) => (
-                <MenuItem key={e.id} value={e.id}>
+                <MenuItem key={e.id} value={String(e.id)}>
                   {e.nome}
                 </MenuItem>
               ))}
@@ -113,16 +116,33 @@ export default function EditForm({
             <Input name="instagram" label="Instagram" prepend={{ icon: "line-md:instagram", color: "#c13584" }} />
           </Grid>
           <Grid item xs={12} md={2}>
-            <Select name="academia_id" label="Academia" required>
-              <MenuItem value="">
-                <em>Selecione</em>
-              </MenuItem>
-              {academias.map((a) => (
-                <MenuItem key={a.id} value={a.id}>
-                  {a.nome}
+            {academiaNome ? (
+              <>
+                <Box sx={{ display: "none" }}>
+                  <Input name="academia_id" />
+                </Box>
+                <TextField
+                  label="Academia"
+                  value={academiaNome}
+                  disabled
+                  size="small"
+                  fullWidth
+                  InputLabelProps={{ shrink: true }}
+                  sx={compactInputRootSx()}
+                />
+              </>
+            ) : (
+              <Select name="academia_id" label="Academia" required={academiaRequired}>
+                <MenuItem value="">
+                  <em>Selecione</em>
                 </MenuItem>
-              ))}
-            </Select>
+                {academias.map((a) => (
+                  <MenuItem key={a.id} value={String(a.id)}>
+                    {a.nome}
+                  </MenuItem>
+                ))}
+              </Select>
+            )}
           </Grid>
         </Grid>
       </Box>

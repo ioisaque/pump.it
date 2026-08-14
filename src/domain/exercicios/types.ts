@@ -4,7 +4,10 @@ export type ExercicioAnexo = {
   tipo: string;
   caminho: string;
   ordem?: number;
+  criado_por?: number;
   criado_em?: string | Date | null;
+  alterado_por?: number;
+  alterado_em?: string | Date | null;
 };
 
 export type Exercicio = {

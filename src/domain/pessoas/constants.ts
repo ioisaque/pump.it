@@ -6,8 +6,10 @@ export const PESSOA_STATUS = {
 
 /**
  * Catálogo `id_pessoas_niveis` (espelho isaque / sync-pessoas-tabelas-from-isaque):
- * - 1  Cliente (membro / “aluno” na listagem)
+ * - 1  Aluno
  * - 4  Atendente
+ * - 5  Personal
+ * - 6  Gestor
  * - 8  App
  * - 9  Admin
  * - 10 Master
@@ -16,10 +18,10 @@ export const PESSOA_STATUS = {
  * Staff: nivel >= FUNCIONARIO_NIVEL_MIN.
  */
 export const PESSOA_NIVEL = {
-  CLIENTE: 1,
-  /** Alias de listagem (gym): mesmo id que Cliente. */
   ALUNO: 1,
   ATENDENTE: 4,
+  PERSONAL: 5,
+  GESTOR: 6,
   APP: 8,
   ADMIN: 9,
   MASTER: 10,

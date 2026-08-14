@@ -2,8 +2,9 @@ import { Box, Button, Container, Typography, useMediaQuery } from "@mui/material
 import Icon from "components/Icon";
 import { SAFE_AREA_TOP } from "components/layout/FakeStatusBar";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { applyAppChrome, applyPageChrome } from "utils/app-chrome";
+import { LINK } from "utils/link";
 import { BRAND_STRIPE_GRADIENT } from "utils/brand-stripe";
 import { DISMISS_KEY, isIosDevice, isIosSafari, shouldShowInstallGate } from "utils/pwa-install";
 import logoDark from "assets/imgs/logos/logo-dark.svg";
@@ -93,7 +94,6 @@ function IosInstallHint({ textMuted, boxBg }: { textMuted: string; boxBg: string
 
 export default function InstallPage() {
   const navigate = useNavigate();
-  const { academiaSlug } = useParams();
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
   const [deferred, setDeferred] = useState<NonNullable<Window["__pwaDeferredInstall"]> | null>(null);
 
@@ -105,7 +105,7 @@ export default function InstallPage() {
   const logo = prefersDark ? logoLight : logoDark;
   const hintBoxBg = prefersDark ? "rgba(255,255,255,0.08)" : "rgba(26,26,26,0.05)";
   const onIos = isIosDevice();
-  const loginTo = academiaSlug ? `/${academiaSlug}/login` : "/login";
+  const loginTo = LINK("/login");
 
   useLayoutEffect(() => {
     applyAppChrome(bg, "page", bg, prefersDark ? "light" : "dark");

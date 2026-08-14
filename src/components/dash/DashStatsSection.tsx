@@ -4,8 +4,8 @@ import StatCard from "components/dash/StatCard";
 import Icon from "components/Icon";
 import { ALUNO_NIVEL_MAX } from "domain/pessoas/constants";
 import useAuth from "hooks/useAuth";
-import useTenantBase from "hooks/useTenantBase";
 import { Link as RouterLink } from "react-router-dom";
+import { LINK } from "utils/link";
 
 type DashStatsSectionProps = {
   stats: DashboardStats | undefined;
@@ -13,7 +13,6 @@ type DashStatsSectionProps = {
 };
 
 export default function DashStatsSection({ stats, loading }: DashStatsSectionProps) {
-  const { base } = useTenantBase();
   const { user } = useAuth();
   const isCliente = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
   const self = stats?.scope === "self" || isCliente;
@@ -28,7 +27,7 @@ export default function DashStatsSection({ stats, loading }: DashStatsSectionPro
         <Stack direction="row" sx={{ mb: 2 }}>
           <Button
             component={RouterLink}
-            to={`${base}/checkin`}
+            to={LINK("/workout/add")}
             variant="contained"
             color="success"
             startIcon={<Icon name="mdi:login" />}
@@ -49,7 +48,7 @@ export default function DashStatsSection({ stats, loading }: DashStatsSectionPro
             icon="mdi:account-group"
             color="#0076F3"
             loading={loading}
-            to={`${base}/pessoas`}
+            to={LINK("/pessoas")}
           />
         </Grid>
       )}
@@ -61,7 +60,7 @@ export default function DashStatsSection({ stats, loading }: DashStatsSectionPro
           icon="mdi:login"
           color="#33CC66"
           loading={loading}
-          to={`${base}/acessos`}
+          to={LINK("/workouts")}
         />
       </Grid>
       <Grid item xs={12} sm={6} md={self ? 4 : 3}>
@@ -72,18 +71,18 @@ export default function DashStatsSection({ stats, loading }: DashStatsSectionPro
           icon="mdi:alert-circle"
           color="#FF5356"
           loading={loading}
-          to={`${base}/mensalidades`}
+          to={LINK("/mensalidades")}
         />
       </Grid>
       <Grid item xs={12} sm={6} md={self ? 4 : 3}>
         <StatCard
-          title="Fichas"
+          title="Planos de treino"
           value={String(fichas)}
-          subtitle={self ? "Suas fichas ativas" : "Fichas de treino ativas"}
+          subtitle={self ? "Seus planos ativos" : "Planos de treino ativos"}
           icon="mdi:clipboard-list"
           color="#9900CC"
           loading={loading}
-          to={`${base}/fichas`}
+          to={LINK("/workout-plans")}
         />
       </Grid>
     </Grid>

@@ -1,18 +1,12 @@
 import { Box, Card, CardActionArea, CardContent, Stack, Typography } from "@mui/material";
-import { Link as RouterLink, useParams } from "react-router-dom";
-
-function hubPath(academiaSlug: string | undefined, path: string) {
-  const base = academiaSlug ? `/${academiaSlug}` : "";
-  return `${base}${path}`;
-}
+import { Link as RouterLink } from "react-router-dom";
+import { LINK } from "utils/link";
 
 export default function SistemaHubPage() {
-  const { academiaSlug } = useParams();
-
   const links = [
-    { to: hubPath(academiaSlug, "/sistema/telas"), title: "Telas", desc: "Catálogo visual de componentes" },
+    { to: LINK("/sistema/telas"), title: "Telas", desc: "Catálogo visual de componentes" },
     {
-      to: hubPath(academiaSlug, "/sistema/integracoes"),
+      to: LINK("/sistema/integracoes"),
       title: "Integrações",
       desc: "Asaas, Mercado Pago e notify.it por academia",
     },

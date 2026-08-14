@@ -12,7 +12,7 @@ import { Form } from "@unform/web";
 import { FormHandles } from "@unform/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { getAppConfig, saveAppConfig } from "api/config";
-import Input from "components/form/Input";
+import FormDateInput from "components/form/FormDateInput";
 import Select from "components/form/Select";
 import Icon from "components/Icon";
 import EntityHeader from "components/layout/EntityHeader";
@@ -136,12 +136,10 @@ export default function ConfiguracoesPage() {
                 ))}
               </Select>
 
-              <Input
+              <FormDateInput
                 name="current_date"
-                size="small"
-                type="date"
                 label="Data do sistema"
-                InputLabelProps={{ shrink: true }}
+                clearable
                 helperText="Vazio = dia real do relógio"
               />
             </Stack>

@@ -139,3 +139,7 @@ export function rBRN(txt: string): number {
 export function cleanUp(obj: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v != null && v != ""));
 }
+
+export function setHeaderColor(color: string): void {
+  document?.querySelector("meta[name='theme-color']")?.setAttribute("content", color);
+}

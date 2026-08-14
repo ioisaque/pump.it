@@ -53,7 +53,14 @@ export default function ActionIcon({
         ...(customGridSize && { "--grid-icon-px": `${size}px` }),
       }}
     >
-      <Icon name={icon} hoverIcon={hoverIcon} color={color ?? "inherit"} hoverColor={hoverColor} />
+      <Icon
+        name={icon}
+        hoverIcon={hoverIcon}
+        color={color ?? "inherit"}
+        hoverColor={hoverColor}
+        width={size}
+        height={size}
+      />
     </Box>
   );
 }

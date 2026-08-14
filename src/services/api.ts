@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
+import { academiaSlugFromPath } from "utils/link";
 import { canPersistSession } from "utils/session-persist";
 
 export const ACCESS_TOKEN_KEY = "@Pump:JWT";
@@ -42,29 +43,8 @@ export function abortInFlightApiRequests() {
   renewInFlightAbort();
 }
 
-const ROOT_PATH_SEGMENTS = new Set([
-  "login",
-  "install",
-  "plataforma",
-  "pessoas",
-  "exercicios",
-  "fichas",
-  "avaliacoes",
-  "acessos",
-  "checkin",
-  "mensalidades",
-  "tabelas",
-  "notificacoes",
-  "configuracoes",
-  "sistema",
-  "api",
-]);
-
 function academiaSlugFromLocation(): string | undefined {
-  if (typeof window === "undefined") return undefined;
-  const seg = window.location.pathname.split("/").filter(Boolean)[0];
-  if (!seg || ROOT_PATH_SEGMENTS.has(seg)) return undefined;
-  return seg;
+  return academiaSlugFromPath();
 }
 
 api.interceptors.request.use((config) => {

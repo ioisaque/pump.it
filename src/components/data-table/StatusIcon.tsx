@@ -13,6 +13,7 @@ type StatusIconProps<TId extends string | number = number> = {
   activeCode?: string;
   pausedCode?: string;
   readOnly?: boolean;
+  size?: number;
 };
 
 export default function StatusIcon<TId extends string | number = number>({
@@ -24,6 +25,7 @@ export default function StatusIcon<TId extends string | number = number>({
   activeCode = "ACTIVE",
   pausedCode = "BLOCKED",
   readOnly = false,
+  size = 32,
 }: StatusIconProps<TId>) {
   const numeric =
     typeof status === "number" || (typeof status === "string" && /^\d+$/.test(status));
@@ -64,7 +66,7 @@ export default function StatusIcon<TId extends string | number = number>({
     >
       <ActionIcon
         icon={icon}
-        size={32}
+        size={size}
         hoverIcon={hoverIcon}
         color={active ? "success.main" : "error.main"}
         hoverColor={readOnly || !onToggle ? (active ? "success.main" : "error.main") : active ? "error.main" : "success.main"}

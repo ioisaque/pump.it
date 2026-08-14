@@ -1,34 +1,19 @@
 import { Alert, Box, Button, IconButton, Skeleton, Stack, Typography } from "@mui/material";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addAcesso, listAcessos } from "api/acessos";
-import { listExercicios } from "api/exercicios";
-import { listFichas } from "api/fichas";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { encerrarTreino, findTreino, Treino } from "api/treinos";
 import anatomiaCostasMask from "assets/imgs/anatomia-costas-mask.webp";
 import anatomiaCostas from "assets/imgs/anatomia-costas.webp";
 import anatomiaFrenteMask from "assets/imgs/anatomia-frente-mask.webp";
 import anatomiaFrente from "assets/imgs/anatomia-frente.webp";
 import Chip from "components/Chip";
 import Icon from "components/Icon";
-import { Acesso } from "domain/acessos/types";
-import { EXERCICIOS_QUERY_KEY } from "domain/exercicios/constants";
-import { fichasQueryKey } from "domain/fichas/constants";
 import { formatDescanso } from "domain/fichas/formatters";
 import { FichaItem } from "domain/fichas/types";
-import { ALUNO_NIVEL_MAX } from "domain/pessoas/constants";
-import useAuth from "hooks/useAuth";
 import useTenantBase from "hooks/useTenantBase";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
-
-function diaFromOrigem(origem?: string | null): string | null {
-  const m = String(origem || "").match(/^app:([A-D])$/i);
-  return m ? m[1].toUpperCase() : null;
-}
-
-function sortedAcessos(list: Acesso[]) {
-  return [...list].sort((a, b) => new Date(a.registrado_em).getTime() - new Date(b.registrado_em).getTime());
-}
+import { useNavigate, useParams } from "react-router-dom";
+import { LINK } from "utils/link";
 
 function isCardio(nome: string, musculos: { nome: string }[]) {
   const blob = `${nome} ${musculos.map((m) => m.nome).join(" ")}`.toLowerCase();
@@ -314,85 +299,72 @@ function MuscleAvatar({ marks }: { marks: MuscleMark[] }) {
   );
 }
 
+function unwrapTreino(data: unknown): Treino | undefined {
+  if (!data || typeof data !== "object") return undefined;
+  const row = data as Treino & { treino?: Treino };
+  if (typeof row.id === "number" && row.id_ficha != null) return row;
+  if (row.treino && typeof row.treino.id === "number") return row.treino;
+  return undefined;
+}
+
+function parseDt(v?: string | null) {
+  if (!v) return NaN;
+  const raw = String(v).trim();
+  const iso = raw.includes("T") ? raw : raw.replace(" ", "T");
+  const local = new Date(iso.length === 19 ? `${iso}` : iso);
+  if (!Number.isNaN(local.getTime())) return local.getTime();
+  return new Date(`${iso}Z`).getTime();
+}
+
 export default function CheckinResumo() {
   const navigate = useNavigate();
-  const { base, academiaSlug } = useTenantBase();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { id } = useParams();
+  const { academiaSlug } = useTenantBase();
   const posted = useRef(false);
-  const isCliente = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
+  const treinoId = Number(id);
 
-  const { data: fichas = [], isLoading: loadingFichas } = useQuery({
-    queryKey: [...fichasQueryKey, "aluno"],
-    queryFn: () => listFichas(),
+  const {
+    data: treinoLoaded,
+    isLoading: loadingTreino,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["treino", treinoId, academiaSlug],
+    queryFn: () => findTreino(treinoId, academiaSlug ? { academia_slug: academiaSlug } : undefined),
+    enabled: Number.isFinite(treinoId) && treinoId > 0,
   });
 
-  const { data: acessosData, isLoading: loadingAcessos } = useQuery({
-    queryKey: ["acessos", "self"],
-    queryFn: () => listAcessos({ academia_slug: academiaSlug, id_pessoa: user?.id }),
-    enabled: Boolean(user?.id),
-  });
-
-  const { data: exercicios = [] } = useQuery({
-    queryKey: EXERCICIOS_QUERY_KEY,
-    queryFn: listExercicios,
-  });
-
-  const ficha = fichas[0];
-  const ordered = useMemo(() => sortedAcessos(acessosData?.acessos ?? []), [acessosData]);
-  const last = ordered[ordered.length - 1];
-  const openEntrada = last?.tipo === "ENTRADA" ? last : null;
-  const lastPair = useMemo(() => {
-    if (openEntrada) return { entrada: openEntrada, saida: null as Acesso | null };
-    const saida = [...ordered].reverse().find((a) => a.tipo === "SAIDA");
-    if (!saida) return { entrada: null as Acesso | null, saida: null as Acesso | null };
-    const before = ordered.filter(
-      (a) => a.tipo === "ENTRADA" && new Date(a.registrado_em) <= new Date(saida.registrado_em),
-    );
-    return { entrada: before[before.length - 1] ?? null, saida };
-  }, [ordered, openEntrada]);
-
-  const dia =
-    diaFromOrigem(openEntrada?.origem ?? lastPair.saida?.origem ?? lastPair.entrada?.origem) || "A";
-  const itensDia: FichaItem[] = (ficha?.itens ?? []).filter((i) => String(i.dia).toUpperCase() === dia);
-
-  const saidaMutation = useMutation({
-    mutationFn: () =>
-      addAcesso({
-        id_pessoa: user!.id,
-        tipo: "SAIDA",
-        origem: `app:${dia}`,
-        academia_slug: academiaSlug,
-      }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["acessos"] });
-    },
-    onError: () => toast.error("Não foi possível registrar a saída."),
+  const encerrarMutation = useMutation({
+    mutationFn: () => encerrarTreino(treinoId, academiaSlug ? { academia_slug: academiaSlug } : undefined),
+    onError: () => toast.error("Não foi possível encerrar o treino."),
   });
 
   useEffect(() => {
-    if (!isCliente || !user?.id || posted.current) return;
-    if (loadingAcessos) return;
-    if (!openEntrada) return;
+    if (!treinoLoaded || posted.current) return;
+    if (treinoLoaded.encerrado_em) return;
     posted.current = true;
-    saidaMutation.mutate();
-  }, [isCliente, user?.id, loadingAcessos, openEntrada, saidaMutation]);
+    encerrarMutation.mutate();
+  }, [treinoLoaded, encerrarMutation]);
+
+  const treino = unwrapTreino(encerrarMutation.data) ?? treinoLoaded;
+  const ficha = treino?.ficha;
+  const dia = String(treino?.dia || "A").toUpperCase();
+  const itensDia: FichaItem[] = (ficha?.itens ?? []).filter((i) => String(i.dia).toUpperCase() === dia);
 
   const musculos = useMemo(() => {
     const map = new Map<number, { nome: string; color: string; icon: string }>();
     for (const item of itensDia) {
-      const ex = exercicios.find((e) => e.id === item.id_exercicio);
-      for (const m of ex?.musculos ?? []) map.set(m.id, m);
+      for (const m of item.musculos ?? []) map.set(m.id, m);
     }
     return [...map.values()];
-  }, [itensDia, exercicios]);
+  }, [itensDia]);
 
   const muscleMarks = useMemo(() => {
     const byRegion = new Map<string, MuscleMark>();
     for (const m of musculos) {
-      const id = regionId(m.nome);
-      if (id && !byRegion.has(id)) {
-        byRegion.set(id, { id, nome: m.nome, color: m.color || "#FF5356", icon: m.icon });
+      const rid = regionId(m.nome);
+      if (rid && !byRegion.has(rid)) {
+        byRegion.set(rid, { id: rid, nome: m.nome, color: m.color || "#FF5356", icon: m.icon });
       }
     }
     return [...byRegion.values()];
@@ -400,36 +372,46 @@ export default function CheckinResumo() {
 
   const descansoSeg = itensDia.reduce((acc, i) => acc + (i.descanso_segundos || 0) * (i.series || 1), 0);
   const cardioSeg = itensDia.reduce((acc, i) => {
-    const ex = exercicios.find((e) => e.id === i.id_exercicio);
-    if (!ex || !isCardio(ex.nome, ex.musculos ?? [])) return acc;
+    if (!isCardio(i.exercicio_nome ?? "", i.musculos ?? [])) return acc;
     return acc + (i.descanso_segundos || 0) * (i.series || 1) + 60 * (i.series || 1);
   }, 0);
 
-  const entrada = lastPair.entrada;
-  const saida = lastPair.saida ?? (saidaMutation.data ?? null);
   const treinoMs =
-    entrada && saida ? Math.max(0, new Date(saida.registrado_em).getTime() - new Date(entrada.registrado_em).getTime()) : 0;
+    treino?.iniciado_em && treino.encerrado_em
+      ? Math.max(0, parseDt(treino.encerrado_em) - parseDt(treino.iniciado_em))
+      : 0;
 
-  if (!isCliente) {
-    return <Alert severity="info">Resumo de treino é para o aluno.</Alert>;
-  }
+  const errMsg =
+    error && typeof error === "object" && "response" in error
+      ? String((error as { response?: { data?: { message?: string } } }).response?.data?.message ?? "")
+      : "";
 
-  const loading = loadingFichas || loadingAcessos || (openEntrada && saidaMutation.isLoading);
+  const loading = loadingTreino || (!treino?.encerrado_em && encerrarMutation.isLoading);
 
   return (
     <Box sx={{ width: "100%", maxWidth: 480, mx: "auto", pb: 3 }}>
       <Typography variant="h5" fontWeight={800} sx={{ mb: 0.5 }}>
-        Treino encerrado
+        {treinoLoaded?.encerrado_em && !encerrarMutation.isSuccess ? "Resumo do treino" : "Treino encerrado"}
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-        {ficha?.nome ?? "Ficha"} · dia {dia}
+        {ficha?.nome ?? "Plano"} · dia {dia}
+        {itensDia.length ? ` · ${itensDia.length} exercícios` : ""}
       </Typography>
 
-      {loading && !saida ? (
+      {isError ? (
+        <Alert severity="warning">{errMsg || "Não foi possível carregar o treino."}</Alert>
+      ) : loading && !treino?.encerrado_em ? (
         <Skeleton variant="rounded" height={240} />
       ) : (
         <Stack spacing={2}>
           <MuscleAvatar marks={muscleMarks} />
+          {musculos.length ? (
+            <Stack direction="row" flexWrap="wrap" useFlexGap spacing={0.75}>
+              {musculos.map((m) => (
+                <Chip key={`${m.nome}-${m.icon}`} icon={m.icon} nome={m.nome} color={m.color} />
+              ))}
+            </Stack>
+          ) : null}
           <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1}>
             <Box sx={{ flex: "1 1 40%", bgcolor: "#33CC6622", borderRadius: 2, p: 1.5 }}>
               <Typography variant="caption" color="text.secondary">
@@ -456,7 +438,7 @@ export default function CheckinResumo() {
               </Typography>
             </Box>
           </Stack>
-          <Button variant="contained" color="success" onClick={() => navigate(base || "/")}>
+          <Button variant="contained" color="success" onClick={() => navigate(LINK("/"))}>
             Voltar ao início
           </Button>
         </Stack>

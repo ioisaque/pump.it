@@ -1,40 +1,39 @@
 import { Backdrop, CircularProgress } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import { findAcademia } from "api/academias";
 import { ALUNO_NIVEL_MAX } from "domain/pessoas/constants";
 import useAuth from "hooks/useAuth";
-import useTenantBase from "hooks/useTenantBase";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
+import { LINK, ROOT_SEGMENTS } from "utils/link";
 
-/** Segmentos de rota na raiz (sem academiaSlug). */
-const ROOT_SEGMENTS = new Set([
-  "login",
-  "install",
-  "plataforma",
-  "pessoas",
-  "exercicios",
-  "fichas",
-  "avaliacoes",
-  "acessos",
-  "checkin",
-  "mensalidades",
-  "tabelas",
-  "notificacoes",
-  "configuracoes",
-  "sistema",
-]);
-
-function loginPathFromLocation(pathname: string) {
-  const seg = pathname.split("/").filter(Boolean)[0];
-  if (seg && !ROOT_SEGMENTS.has(seg)) {
-    return `/${seg}/login`;
+function pathForBoundAcademia(ownSlug: string, pathname: string, search: string) {
+  const parts = pathname.split("/").filter(Boolean);
+  const first = parts[0];
+  if (first === ownSlug) return null;
+  if (first && !ROOT_SEGMENTS.has(first)) {
+    const rest = parts.slice(1).join("/");
+    return `/${ownSlug}${rest ? `/${rest}` : ""}${search}`;
   }
-  return "/login";
+  if (!first || first === "plataforma") {
+    return `/${ownSlug}${search}`;
+  }
+  return `/${ownSlug}/${parts.join("/")}${search}`;
 }
 
 export default function RequireAuth() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+  const boundId = Number(user?.academia_id);
+  const bound = Number.isFinite(boundId) && boundId > 0;
 
-  if (isLoading) {
+  const { data: academia, isLoading: loadingAcademia } = useQuery({
+    queryKey: ["academia", "self", boundId],
+    queryFn: () => findAcademia(boundId),
+    enabled: isAuthenticated && bound && !user?.academia_slug,
+    staleTime: Infinity,
+  });
+
+  if (isLoading || (bound && !user?.academia_slug && loadingAcademia)) {
     return (
       <Backdrop open sx={{ color: "primary.main", backgroundColor: "#f4f1e6", zIndex: (t) => t.zIndex.drawer + 1 }}>
         <CircularProgress color="inherit" />
@@ -43,7 +42,13 @@ export default function RequireAuth() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to={loginPathFromLocation(location.pathname)} state={{ from: location }} replace />;
+    return <Navigate to={LINK("/login")} state={{ from: location }} replace />;
+  }
+
+  const ownSlug = user?.academia_slug || academia?.academia.slug;
+  if (bound && ownSlug) {
+    const next = pathForBoundAcademia(ownSlug, location.pathname, location.search);
+    if (next) return <Navigate to={next} replace />;
   }
 
   return <Outlet />;
@@ -52,7 +57,6 @@ export default function RequireAuth() {
 /** Bloqueia cliente (aluno) — staff, admin e master passam. */
 export function RequireStaff() {
   const { user, isLoading } = useAuth();
-  const { base } = useTenantBase();
 
   if (isLoading) {
     return (
@@ -63,7 +67,7 @@ export function RequireStaff() {
   }
 
   if ((user?.nivel ?? 0) <= ALUNO_NIVEL_MAX) {
-    return <Navigate to={base || "/"} replace />;
+    return <Navigate to={LINK("/")} replace />;
   }
 
   return <Outlet />;

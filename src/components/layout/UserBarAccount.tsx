@@ -16,14 +16,13 @@ import UserAvatar from "components/UserAvatar";
 import { NotificacaoInboxItem } from "domain/notificacoes/types";
 import useAuth from "hooks/useAuth";
 import { usePessoa } from "hooks/usePessoa";
-import useTenantBase from "hooks/useTenantBase";
 import { Fragment, useEffect, useState } from "react";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
+import { LINK } from "utils/link";
 
 export default function UserBarAccount() {
   const { user, logOut } = useAuth();
   const { data: pessoa } = usePessoa(user?.id);
-  const { base } = useTenantBase();
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
@@ -69,7 +68,7 @@ export default function UserBarAccount() {
 
   async function handleLogout() {
     await logOut();
-    navigate(base ? `${base}/login` : "/login", { replace: true });
+    navigate(LINK("/login"), { replace: true });
   }
 
   return (
@@ -179,7 +178,7 @@ export default function UserBarAccount() {
         <Divider />
         <MenuItem
           component={RouterLink}
-          to={user?.id ? `${base}/pessoas/${user.id}/edit` : `${base}/pessoas`}
+          to={user?.id ? LINK(`/pessoas/${user.id}/edit`) : LINK("/pessoas")}
           onClick={() => setAnchorEl(null)}
           disabled={!user?.id}
         >

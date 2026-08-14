@@ -20,9 +20,9 @@ import EntityHeader from "components/layout/EntityHeader";
 import { INTEGRACAO_PROVIDER_META, IntegracaoProviderSlug } from "domain/integracoes/constants";
 import { AsaasConfigPublic, MercadoPagoConfigPublic } from "domain/integracoes/types";
 import useIntegracaoConfigForm from "hooks/useIntegracaoConfigForm";
-import useTenantBase from "hooks/useTenantBase";
 import { ReactNode } from "react";
 import { Link as RouterLink } from "react-router-dom";
+import { LINK } from "utils/link";
 
 type IntegracaoConfigFormProps = {
   provider: IntegracaoProviderSlug;
@@ -35,7 +35,6 @@ type IntegracaoConfigFormProps = {
 };
 
 export default function IntegracaoConfigForm({ provider, logo, renderWizard }: IntegracaoConfigFormProps) {
-  const { base } = useTenantBase();
   const meta = INTEGRACAO_PROVIDER_META[provider];
   const {
     wizardOpen,
@@ -119,7 +118,7 @@ export default function IntegracaoConfigForm({ provider, logo, renderWizard }: I
             </Button>
             <Button
               component={RouterLink}
-              to={`${base}/sistema/integracoes`}
+              to={LINK("/sistema/integracoes")}
               variant="contained"
               color="quinzel"
               sx={{ width: 140, height: 40 }}

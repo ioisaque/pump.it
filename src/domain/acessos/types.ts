@@ -7,7 +7,7 @@ export type Acesso = {
   id_pessoa: number;
   pessoa_nome?: string | null;
   tipo: AcessoTipo | string;
-  registrado_em: string;
+  criado_em: string;
   origem?: string | null;
   criado_por: number;
 };
@@ -15,6 +15,6 @@ export type Acesso = {
 export type AcessoFormValues = {
   id_pessoa: number | "";
   tipo: AcessoTipo;
-  registrado_em?: string;
+  criado_em?: string;
   origem?: string;
 };

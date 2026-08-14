@@ -3,7 +3,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addAcesso, listAcessos } from "api/acessos";
 import { listExercicios } from "api/exercicios";
 import { listFichas } from "api/fichas";
+import anatomiaCostasMask from "assets/imgs/anatomia-costas-mask.webp";
 import anatomiaCostas from "assets/imgs/anatomia-costas.webp";
+import anatomiaFrenteMask from "assets/imgs/anatomia-frente-mask.webp";
 import anatomiaFrente from "assets/imgs/anatomia-frente.webp";
 import Chip from "components/Chip";
 import Icon from "components/Icon";
@@ -51,6 +53,8 @@ function regionId(nome: string): string | null {
   return null;
 }
 
+type MuscleMark = { id: string; nome: string; color: string; icon: string };
+
 function Overlay({
   id,
   active,
@@ -62,16 +66,32 @@ function Overlay({
 }) {
   const c = active[id];
   if (!c) return null;
-  return (
-    <g fill={c} fillOpacity={0.52} style={{ mixBlendMode: "multiply" }}>
-      {children}
-    </g>
-  );
+  return <g fill={c}>{children}</g>;
 }
 
-function MuscleAvatar({ active }: { active: Record<string, string> }) {
+const FRONT_CALL = {
+  shoulders: { ax: 222, ay: 78, side: "right" as const },
+  chest: { ax: 210, ay: 108, side: "right" as const },
+  biceps: { ax: 122, ay: 118, side: "left" as const },
+  abs: { ax: 208, ay: 152, side: "right" as const },
+  quads: { ax: 144, ay: 236, side: "left" as const },
+  calves: { ax: 142, ay: 308, side: "left" as const },
+};
+
+const BACK_CALL = {
+  shoulders: { ax: 222, ay: 78, side: "right" as const },
+  back: { ax: 214, ay: 120, side: "right" as const },
+  triceps: { ax: 124, ay: 118, side: "left" as const },
+  glutes: { ax: 214, ay: 200, side: "right" as const },
+  hams: { ax: 144, ay: 246, side: "left" as const },
+  calves: { ax: 140, ay: 308, side: "left" as const },
+};
+
+function MuscleAvatar({ marks }: { marks: MuscleMark[] }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
+  const active: Record<string, string> = {};
+  for (const m of marks) active[m.id] = m.color;
 
   const goTo = (next: number) => {
     const el = scrollerRef.current;
@@ -83,11 +103,31 @@ function MuscleAvatar({ active }: { active: Record<string, string> }) {
   const arrowSx = {
     position: "absolute" as const,
     top: "48%",
-    zIndex: 3,
+    zIndex: 4,
     opacity: 0.28,
     color: "text.primary",
     p: 0.25,
     "&:hover": { opacity: 0.55, bgcolor: "transparent" },
+  };
+
+  const callMap = index === 0 ? FRONT_CALL : BACK_CALL;
+  const callouts = marks.filter((m) => m.id in callMap);
+
+  const overlayMask = {
+    position: "absolute" as const,
+    inset: 0,
+    width: "100%",
+    height: "100%",
+    pointerEvents: "none" as const,
+    mixBlendMode: "multiply" as const,
+    WebkitMaskImage: `url(${index === 0 ? anatomiaFrenteMask : anatomiaCostasMask})`,
+    maskImage: `url(${index === 0 ? anatomiaFrenteMask : anatomiaCostasMask})`,
+    WebkitMaskSize: "contain",
+    maskSize: "contain",
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
   };
 
   return (
@@ -99,6 +139,7 @@ function MuscleAvatar({ active }: { active: Record<string, string> }) {
         border: "1px solid",
         borderColor: "divider",
         overflow: "hidden",
+        isolation: "isolate",
       }}
     >
       {index > 0 ? (
@@ -136,34 +177,34 @@ function MuscleAvatar({ active }: { active: Record<string, string> }) {
               draggable={false}
               sx={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
             />
-            <Box
-              component="svg"
-              viewBox="0 0 360 360"
-              sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
-            >
-              <Overlay id="shoulders" active={active}>
-                <ellipse cx="122" cy="88" rx="28" ry="24" />
-                <ellipse cx="238" cy="88" rx="28" ry="24" />
-              </Overlay>
-              <Overlay id="chest" active={active}>
-                <ellipse cx="180" cy="118" rx="48" ry="32" />
-              </Overlay>
-              <Overlay id="biceps" active={active}>
-                <ellipse cx="98" cy="132" rx="18" ry="32" />
-                <ellipse cx="262" cy="132" rx="18" ry="32" />
-              </Overlay>
-              <Overlay id="abs" active={active}>
-                <ellipse cx="180" cy="162" rx="32" ry="36" />
-              </Overlay>
-              <Overlay id="quads" active={active}>
-                <ellipse cx="152" cy="232" rx="26" ry="52" />
-                <ellipse cx="208" cy="232" rx="26" ry="52" />
-              </Overlay>
-              <Overlay id="calves" active={active}>
-                <ellipse cx="150" cy="302" rx="18" ry="34" />
-                <ellipse cx="210" cy="302" rx="18" ry="34" />
-              </Overlay>
-            </Box>
+            <Box component="svg" viewBox="0 0 360 360" sx={{ ...overlayMask, WebkitMaskImage: `url(${anatomiaFrenteMask})`, maskImage: `url(${anatomiaFrenteMask})` }}>
+                <Overlay id="shoulders" active={active}>
+                  <path d="M140 66 C132 70 128 80 130 92 C134 102 146 102 154 92 C154 80 150 70 140 66 Z" />
+                  <path d="M220 66 C228 70 232 80 230 92 C226 102 214 102 206 92 C206 80 210 70 220 66 Z" />
+                </Overlay>
+                <Overlay id="chest" active={active}>
+                  <path d="M180 76 C164 76 152 86 150 102 C152 116 164 124 180 122 C180 104 180 88 180 76 Z" />
+                  <path d="M180 76 C196 76 208 86 210 102 C208 116 196 124 180 122 C180 104 180 88 180 76 Z" />
+                </Overlay>
+                <Overlay id="biceps" active={active}>
+                  <path d="M126 96 C116 104 114 124 116 146 C122 154 134 150 138 132 C140 114 136 100 126 96 Z" />
+                  <path d="M234 96 C244 104 246 124 244 146 C238 154 226 150 222 132 C220 114 224 100 234 96 Z" />
+                </Overlay>
+                <Overlay id="abs" active={active}>
+                  <path d="M168 122 C176 120 180 120 180 176 L168 176 C162 158 162 138 168 122 Z" />
+                  <path d="M192 122 C184 120 180 120 180 176 L192 176 C198 158 198 138 192 122 Z" />
+                  <path d="M154 128 C146 142 146 164 154 178 L168 176 C164 152 160 134 168 124 Z" />
+                  <path d="M206 128 C214 142 214 164 206 178 L192 176 C196 152 200 134 192 124 Z" />
+                </Overlay>
+                <Overlay id="quads" active={active}>
+                  <path d="M144 214 C138 238 136 262 142 276 C152 280 166 268 168 242 C166 224 158 214 148 214 Z" />
+                  <path d="M216 214 C222 238 224 262 218 276 C208 280 194 268 192 242 C194 224 202 214 212 214 Z" />
+                </Overlay>
+                <Overlay id="calves" active={active}>
+                  <path d="M142 286 C136 308 138 326 148 334 C158 334 164 316 162 298 C160 288 152 284 142 286 Z" />
+                  <path d="M218 286 C224 308 222 326 212 334 C202 334 196 316 198 298 C200 288 208 284 218 286 Z" />
+                </Overlay>
+              </Box>
           </Box>
         </Box>
         <Box sx={{ flex: "0 0 100%", width: "100%", scrollSnapAlign: "start", boxSizing: "border-box" }}>
@@ -175,36 +216,81 @@ function MuscleAvatar({ active }: { active: Record<string, string> }) {
               draggable={false}
               sx={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
             />
-            <Box
-              component="svg"
-              viewBox="0 0 360 360"
-              sx={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
-            >
-              <Overlay id="shoulders" active={active}>
-                <ellipse cx="122" cy="90" rx="28" ry="24" />
-                <ellipse cx="238" cy="90" rx="28" ry="24" />
-              </Overlay>
-              <Overlay id="back" active={active}>
-                <ellipse cx="180" cy="128" rx="54" ry="50" />
-              </Overlay>
-              <Overlay id="triceps" active={active}>
-                <ellipse cx="96" cy="136" rx="18" ry="34" />
-                <ellipse cx="264" cy="136" rx="18" ry="34" />
-              </Overlay>
-              <Overlay id="glutes" active={active}>
-                <ellipse cx="180" cy="208" rx="36" ry="26" />
-              </Overlay>
-              <Overlay id="hams" active={active}>
-                <ellipse cx="152" cy="252" rx="24" ry="44" />
-                <ellipse cx="208" cy="252" rx="24" ry="44" />
-              </Overlay>
-              <Overlay id="calves" active={active}>
-                <ellipse cx="150" cy="308" rx="18" ry="32" />
-                <ellipse cx="210" cy="308" rx="18" ry="32" />
-              </Overlay>
-            </Box>
+            {index === 1 ? (
+              <Box component="svg" viewBox="0 0 360 360" sx={overlayMask}>
+                <Overlay id="shoulders" active={active}>
+                  <path d="M138 68 C130 74 128 86 132 96 C138 104 150 102 156 90 C154 78 148 68 138 68 Z" />
+                  <path d="M222 68 C230 74 232 86 228 96 C222 104 210 102 204 90 C206 78 212 68 222 68 Z" />
+                </Overlay>
+                <Overlay id="back" active={active}>
+                  <path d="M180 58 C162 62 150 72 148 88 C158 94 180 98 180 58 Z" />
+                  <path d="M180 58 C198 62 210 72 212 88 C202 94 180 98 180 58 Z" />
+                  <path d="M150 90 C134 112 130 148 140 176 L180 180 L180 96 C168 94 156 92 150 90 Z" />
+                  <path d="M210 90 C226 112 230 148 220 176 L180 180 L180 96 C192 94 204 92 210 90 Z" />
+                </Overlay>
+                <Overlay id="triceps" active={active}>
+                  <path d="M126 94 C118 108 118 138 124 156 C134 160 142 146 140 120 C138 102 132 94 126 94 Z" />
+                  <path d="M234 94 C242 108 242 138 236 156 C226 160 218 146 220 120 C222 102 228 94 234 94 Z" />
+                </Overlay>
+                <Overlay id="glutes" active={active}>
+                  <path d="M150 188 C144 200 150 216 178 218 C178 200 168 188 150 188 Z" />
+                  <path d="M210 188 C216 200 210 216 182 218 C182 200 192 188 210 188 Z" />
+                </Overlay>
+                <Overlay id="hams" active={active}>
+                  <path d="M144 218 C136 242 136 266 144 276 C156 280 168 266 170 242 C168 224 158 218 148 218 Z" />
+                  <path d="M216 218 C224 242 224 266 216 276 C204 280 192 266 190 242 C192 224 202 218 212 218 Z" />
+                </Overlay>
+                <Overlay id="calves" active={active}>
+                  <path d="M140 286 C134 308 136 326 146 334 C156 334 164 316 162 296 C158 286 148 284 140 286 Z" />
+                  <path d="M220 286 C226 308 224 326 214 334 C204 334 196 316 198 296 C202 286 212 284 220 286 Z" />
+                </Overlay>
+              </Box>
+            ) : null}
           </Box>
         </Box>
+      </Box>
+      <Box
+        component="svg"
+        viewBox="0 0 360 360"
+        sx={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          top: 0,
+          aspectRatio: "1 / 1",
+          width: "100%",
+          pointerEvents: "none",
+          zIndex: 2,
+        }}
+      >
+        {callouts.map((m) => {
+          const c = callMap[m.id as keyof typeof callMap];
+          const x2 = c.side === "left" ? 36 : 324;
+          return (
+            <g key={m.id}>
+              <line x1={c.ax} y1={c.ay} x2={x2} y2={c.ay} stroke={m.color} strokeWidth={1.4} />
+              <circle cx={c.ax} cy={c.ay} r={2.4} fill={m.color} />
+            </g>
+          );
+        })}
+      </Box>
+      <Box sx={{ position: "absolute", left: 0, right: 0, top: 0, aspectRatio: "1 / 1", zIndex: 3, pointerEvents: "none" }}>
+        {callouts.map((m) => {
+          const c = callMap[m.id as keyof typeof callMap];
+          return (
+            <Box
+              key={m.id}
+              sx={{
+                position: "absolute",
+                top: `calc(${(c.ay / 360) * 100}% - 12px)`,
+                left: c.side === "left" ? 6 : "auto",
+                right: c.side === "right" ? 6 : "auto",
+              }}
+            >
+              <Chip icon={m.icon} nome={m.nome} color={m.color} fontSize="72%" />
+            </Box>
+          );
+        })}
       </Box>
       <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ pb: 1.25, pt: 0.25 }}>
         <Typography variant="caption" color="text.secondary">
@@ -213,12 +299,7 @@ function MuscleAvatar({ active }: { active: Record<string, string> }) {
         {[0, 1].map((i) => (
           <Box
             key={i}
-            onClick={() => {
-              const el = scrollerRef.current;
-              if (!el) return;
-              el.scrollTo({ left: i * el.clientWidth, behavior: "smooth" });
-              setIndex(i);
-            }}
+            onClick={() => goTo(i)}
             sx={{
               width: 8,
               height: 8,
@@ -306,13 +387,15 @@ export default function CheckinResumo() {
     return [...map.values()];
   }, [itensDia, exercicios]);
 
-  const activeRegions = useMemo(() => {
-    const out: Record<string, string> = {};
+  const muscleMarks = useMemo(() => {
+    const byRegion = new Map<string, MuscleMark>();
     for (const m of musculos) {
       const id = regionId(m.nome);
-      if (id) out[id] = m.color || "#FF5356";
+      if (id && !byRegion.has(id)) {
+        byRegion.set(id, { id, nome: m.nome, color: m.color || "#FF5356", icon: m.icon });
+      }
     }
-    return out;
+    return [...byRegion.values()];
   }, [musculos]);
 
   const descansoSeg = itensDia.reduce((acc, i) => acc + (i.descanso_segundos || 0) * (i.series || 1), 0);
@@ -346,7 +429,7 @@ export default function CheckinResumo() {
         <Skeleton variant="rounded" height={240} />
       ) : (
         <Stack spacing={2}>
-          <MuscleAvatar active={activeRegions} />
+          <MuscleAvatar marks={muscleMarks} />
           <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1}>
             <Box sx={{ flex: "1 1 40%", bgcolor: "#33CC6622", borderRadius: 2, p: 1.5 }}>
               <Typography variant="caption" color="text.secondary">
@@ -373,13 +456,6 @@ export default function CheckinResumo() {
               </Typography>
             </Box>
           </Stack>
-          {musculos.length ? (
-            <Stack direction="row" flexWrap="wrap" useFlexGap spacing={0.75}>
-              {musculos.map((m) => (
-                <Chip key={m.nome} icon={m.icon} nome={m.nome} color={m.color} />
-              ))}
-            </Stack>
-          ) : null}
           <Button variant="contained" color="success" onClick={() => navigate(base || "/")}>
             Voltar ao início
           </Button>

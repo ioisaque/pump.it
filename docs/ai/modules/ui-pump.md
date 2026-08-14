@@ -33,7 +33,7 @@ src/
 ## Master vs tenant
 
 - `/login` (nivel 10, sem academia) → rotas em `/` e `/plataforma/*` **sem** forçar `/:academiaSlug`
-- Nav geral (funcionários, tabelas, notificações/inbox, academias, config): disponível na plataforma
+- Nav geral (pessoas, tabelas, notificações/inbox, academias, config): disponível na plataforma
 - Nav tenant (exercícios, fichas, avaliações, acessos, mensalidades): só com `/:academiaSlug`
-- `/pessoas`: lista **funcionários** (`tipo=FUNCIONARIO`); alunos fora do default
+- `/pessoas`: lista pessoas (`tipo=ALL` por padrão)
 

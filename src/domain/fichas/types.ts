@@ -12,13 +12,21 @@ export type FichaItem = {
   descanso_segundos: number;
 };
 
+export type FichaAlunoRef = {
+  id: number;
+  nome: string;
+};
+
 export type Ficha = {
   id: number;
   academia_id: number;
-  id_pessoa?: number | null;
   status: string;
   nome: string;
   padrao: FichaPadrao | string;
+  modelo?: boolean;
+  id_origem?: number | null;
+  alunos_count?: number;
+  alunos?: FichaAlunoRef[];
   criado_por?: number;
   criado_em?: string | null;
   alterado_por?: number;
@@ -29,6 +37,7 @@ export type Ficha = {
 export type FichaPayload = {
   academia_id?: number;
   id_pessoa?: number | null;
+  salvar_como?: "todos" | "novo";
   status?: string;
   nome: string;
   padrao: string;

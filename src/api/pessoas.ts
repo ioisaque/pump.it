@@ -1,9 +1,9 @@
-import { Pessoa, PessoaDetail } from "domain/pessoas/types";
 import { PESSOA_LIST_TIPO, PessoaListTipo } from "domain/pessoas/constants";
+import { Pessoa, PessoaDetail } from "domain/pessoas/types";
 import { api } from "services/api";
 
 export type ListPessoasParams = {
-  /** Default FUNCIONARIO — exclui alunos. */
+  /** Default ALL — alunos e staff. */
   tipo?: PessoaListTipo;
   /** Filtro opcional; master sem academia lista global. */
   academia_id?: number;

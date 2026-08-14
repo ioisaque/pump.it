@@ -20,7 +20,7 @@ import { MouseEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { apiBaseUrl } from "services/api";
 
-const HIDE_ON_MOBILE = ["descricao"] as const;
+const HIDE_ON_MOBILE = ["status"] as const;
 
 function youtubeIdFromUrl(url: string): string | null {
   const m = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([a-zA-Z0-9_-]{11})/);
@@ -36,9 +36,55 @@ function capaSrc(capa?: { tipo: string; caminho: string } | null): string {
   return resolveUploadUrl(capa.caminho);
 }
 
-function formatCarga(carga?: number | null): string {
-  if (carga == null || Number.isNaN(Number(carga))) return "—";
-  return `${carga} kg`;
+function ExercicioListThumb({ row, showCode }: { row: Exercicio; showCode?: boolean }) {
+  const src = capaSrc(row.capa);
+  return (
+    <Stack alignItems="center" spacing={0.25} sx={{ py: 1, width: "100%" }}>
+      <Box
+        sx={{
+          width: 72,
+          height: 72,
+          borderRadius: 1,
+          overflow: "hidden",
+          bgcolor: "action.hover",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        {src ? (
+          <Box component="img" src={src} alt="" sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        ) : (
+          <Icon name="mdi:dumbbell" />
+        )}
+      </Box>
+      {showCode ? (
+        <Typography variant="caption" color="text.secondary" lineHeight={1.2}>
+          {String(row.id).padStart(5, "0")}
+        </Typography>
+      ) : null}
+    </Stack>
+  );
+}
+
+function ExercicioListTexto({ row }: { row: Exercicio }) {
+  return (
+    <Box sx={{ py: 1, width: "100%", minWidth: 0 }}>
+      <Typography variant="body2" fontWeight={600} noWrap>
+        {row.nome}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" noWrap sx={{ mt: 0.25 }}>
+        {row.descricao?.trim() || "—"}
+      </Typography>
+      {(row.musculos ?? []).length ? (
+        <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
+          {(row.musculos ?? []).map((m) => (
+            <Chip key={m.id} icon={m.icon} nome={m.nome} color={m.color} fontSize="72%" />
+          ))}
+        </Stack>
+      ) : null}
+    </Box>
+  );
 }
 
 export default function ExerciciosList() {
@@ -66,11 +112,11 @@ export default function ExerciciosList() {
     if (!q) return source;
     return source.filter(
       (row) =>
-        row.nome.toLowerCase().includes(q) ||
+        (row.nome ?? "").toLowerCase().includes(q) ||
         (row.descricao ?? "").toLowerCase().includes(q) ||
-        (row.musculos ?? []).some((m) => m.nome.toLowerCase().includes(q)) ||
+        (row.musculos ?? []).some((m) => (m.nome ?? "").toLowerCase().includes(q)) ||
         String(row.id).padStart(5, "0").includes(q) ||
-        row.status.toLowerCase().includes(q),
+        String(row.status ?? "").toLowerCase().includes(q),
     );
   }, [data, filter, isCliente]);
 
@@ -84,61 +130,30 @@ export default function ExerciciosList() {
           minWidth: 280,
           sortable: false,
           filterable: false,
-          renderCell: (params) => {
-            const src = capaSrc(params.row.capa);
-            return (
-              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ py: 1, width: "100%", minWidth: 0 }}>
-                <Box
-                  sx={{
-                    width: 72,
-                    height: 72,
-                    flexShrink: 0,
-                    borderRadius: 1,
-                    overflow: "hidden",
-                    bgcolor: "action.hover",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  {src ? (
-                    <Box component="img" src={src} alt="" sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  ) : (
-                    <Icon name="mdi:dumbbell" />
-                  )}
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography variant="body2" fontWeight={600} noWrap>
-                    {params.row.nome}
-                  </Typography>
-                  <Stack direction="row" spacing={1} alignItems="flex-start" justifyContent="space-between" sx={{ mt: 0.25 }}>
-                    <Typography variant="body2" color="text.secondary" noWrap sx={{ minWidth: 0, pr: 1, flex: 1 }}>
-                      {params.row.descricao?.trim() || "—"}
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600} sx={{ flexShrink: 0, whiteSpace: "nowrap" }}>
-                      {formatCarga(params.row.carga_inicial)}
-                    </Typography>
-                  </Stack>
-                  {(params.row.musculos ?? []).length ? (
-                    <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ mt: 0.5 }}>
-                      {(params.row.musculos ?? []).map((m) => (
-                        <Chip key={m.id} icon={m.icon} nome={m.nome} color={m.color} fontSize="72%" />
-                      ))}
-                    </Stack>
-                  ) : null}
-                </Box>
-              </Stack>
-            );
-          },
+          renderCell: (params) => (
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ width: "100%", minWidth: 0 }}>
+              <Box sx={{ flexShrink: 0, width: 72 }}>
+                <ExercicioListThumb row={params.row} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <ExercicioListTexto row={params.row} />
+              </Box>
+            </Stack>
+          ),
         },
       ];
     }
     return [
       {
-        field: "id",
+        field: "exercicio",
         headerName: "Código",
-        width: 100,
-        renderCell: (params) => params.value?.toString().padStart(5, "0"),
+        width: 96,
+        minWidth: 96,
+        maxWidth: 96,
+        flex: 0,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => <ExercicioListThumb row={params.row} showCode />,
       },
       {
         field: "status",
@@ -154,27 +169,14 @@ export default function ExerciciosList() {
           />
         ),
       },
-      { field: "nome", headerName: "Nome", flex: 1, minWidth: 160 },
       {
         field: "descricao",
         headerName: "Descrição",
         flex: 1.2,
-        minWidth: 180,
-        valueGetter: (_v, row) => row.descricao ?? "",
-      },
-      {
-        field: "musculos",
-        headerName: "Músculos",
-        flex: 1,
-        minWidth: 200,
+        minWidth: 220,
         sortable: false,
-        renderCell: (params) => (
-          <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap alignItems="center" sx={{ py: 0.5 }}>
-            {(params.row.musculos ?? []).map((m) => (
-              <Chip key={m.id} icon={m.icon} nome={m.nome} color={m.color} />
-            ))}
-          </Stack>
-        ),
+        valueGetter: (_v, row) => row.descricao ?? "",
+        renderCell: (params) => <ExercicioListTexto row={params.row} />,
       },
     ];
   }, [isCliente, toggleStatusMutation.mutate]);
@@ -249,6 +251,7 @@ export default function ExerciciosList() {
               rows={rows}
               columns={columns}
               loading={isFetching}
+              getRowHeight={() => (isCliente ? 88 : 104)}
               columnVisibilityModel={isCliente ? undefined : columnVisibilityModel}
               onRowClick={isCliente ? undefined : onRowClick}
             />

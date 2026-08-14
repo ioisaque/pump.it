@@ -134,7 +134,7 @@ export const GRID_COL_ACTIONS_TWO = {
 function calcFillPageSize(containerHeight: number): number {
   const bodyHeight = containerHeight - GRID_HEADER_HEIGHT_PX - GRID_FOOTER_HEIGHT_PX;
   const rowSlot = GRID_ROW_MIN_HEIGHT_PX + GRID_ROW_GAP_PX;
-  return Math.max(1, Math.floor(bodyHeight / rowSlot));
+  return Math.min(25, Math.max(1, Math.floor(bodyHeight / rowSlot)));
 }
 
 const Table = styled(DataGrid, {

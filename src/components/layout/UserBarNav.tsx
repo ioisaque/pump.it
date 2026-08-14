@@ -31,14 +31,14 @@ type NavItem = {
   masterOnly?: boolean;
   platformOnly?: boolean;
   tenantOnly?: boolean;
-  /** Funcionário+ (esconde de cliente/aluno). */
+  /** Staff+ (esconde de cliente/aluno). */
   staffOnly?: boolean;
 };
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", icon: "line-md:home-twotone", path: "" },
   // Gerais: master em `/` ou `/plataforma` sem slug; tenant com `/:slug`
-  { label: "Funcionários", icon: "accounts", path: "/pessoas", staffOnly: true },
+  { label: "Pessoas", icon: "accounts", path: "/pessoas", staffOnly: true },
   { label: "Exercícios", icon: "mdi:dumbbell", path: "/exercicios", tenantOnly: true },
   { label: "Fichas", icon: "mdi:clipboard-list-outline", path: "/fichas", tenantOnly: true },
   { label: "Avaliações", icon: "mdi:clipboard-pulse-outline", path: "/avaliacoes", tenantOnly: true },
@@ -89,7 +89,7 @@ export default function UserBarNav() {
         if (item.platformOnly && isTenant) return false;
         // Dados de academia (fichas/acessos/…): só com slug no path
         if (item.tenantOnly && !isTenant) return false;
-        // Itens gerais (funcionários/tabelas/notificações): master sem slug ou tenant com slug
+        // Itens gerais (pessoas/tabelas/notificações): master sem slug ou tenant com slug
         if (!item.tenantOnly && !item.platformOnly && !item.masterOnly && !isTenant && !isMaster) {
           return false;
         }

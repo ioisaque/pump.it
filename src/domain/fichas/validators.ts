@@ -26,19 +26,12 @@ export function validateFichaForm(data: {
 }
 
 export function buildFichaPayload(
-  data: { nome: string; padrao: string; id_pessoa?: string | number | null; status?: string },
+  data: { nome: string; padrao: string; status?: string },
   itens: FichaItem[],
   academiaId?: number,
 ): FichaPayload {
-  const idPessoaRaw = data.id_pessoa;
-  const id_pessoa =
-    idPessoaRaw === "" || idPessoaRaw == null || idPessoaRaw === undefined
-      ? null
-      : Number(idPessoaRaw);
-
   return {
     academia_id: academiaId,
-    id_pessoa: Number.isFinite(id_pessoa as number) ? (id_pessoa as number) : null,
     status: data.status,
     nome: String(data.nome).trim(),
     padrao: String(data.padrao).trim().toUpperCase(),

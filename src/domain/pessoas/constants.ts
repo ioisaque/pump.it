@@ -13,7 +13,7 @@ export const PESSOA_STATUS = {
  * - 10 Master
  *
  * Aluno: nivel <= ALUNO_NIVEL_MAX.
- * Funcionário: nivel >= FUNCIONARIO_NIVEL_MIN.
+ * Staff: nivel >= FUNCIONARIO_NIVEL_MIN.
  */
 export const PESSOA_NIVEL = {
   CLIENTE: 1,
@@ -28,7 +28,7 @@ export const PESSOA_NIVEL = {
 export const ALUNO_NIVEL_MAX = 1;
 export const FUNCIONARIO_NIVEL_MIN = 4;
 
-/** Filtro de listagem (UPPERCASE). Default na API/UI: FUNCIONARIO. */
+/** Filtro de listagem (UPPERCASE). Default na UI: ALL. */
 export const PESSOA_LIST_TIPO = {
   FUNCIONARIO: "FUNCIONARIO",
   ALUNO: "ALUNO",

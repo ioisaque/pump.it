@@ -29,14 +29,14 @@ function parseListTipo(raw: string | null): PessoaListTipo {
   if (raw === PESSOA_LIST_TIPO.ALUNO || raw === PESSOA_LIST_TIPO.ALL || raw === PESSOA_LIST_TIPO.FUNCIONARIO) {
     return raw;
   }
-  return PESSOA_LIST_TIPO.FUNCIONARIO;
+  return PESSOA_LIST_TIPO.ALL;
 }
 
 function PessoaList() {
   const navigate = useNavigate();
   const { base } = useTenantBase();
   const [searchParams] = useSearchParams();
-  /** Hook for sibling filter agent: `?tipo=FUNCIONARIO|ALUNO|ALL` (default FUNCIONARIO). */
+  /** `?tipo=FUNCIONARIO|ALUNO|ALL` (default ALL). */
   const listTipo = parseListTipo(searchParams.get("tipo"));
   const etiquetaFilter = searchParams.get("etiqueta");
   const nivelFilter = searchParams.get("nivel");

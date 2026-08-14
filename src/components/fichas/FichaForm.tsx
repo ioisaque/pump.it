@@ -66,16 +66,14 @@ export default function FichaForm({ formId, initial, onSubmit }: FichaFormProps)
     formRef.current?.setData({
       nome: initial.nome ?? "",
       padrao: initial.padrao ?? FICHA_PADRAO.A_B,
-      id_pessoa: initial.id_pessoa != null ? String(initial.id_pessoa) : "",
     });
   }, [initial]);
 
-  async function handleSubmit(data: { nome?: string; padrao?: string; id_pessoa?: string }) {
+  async function handleSubmit(data: { nome?: string; padrao?: string }) {
     const nextPadrao = data.padrao ?? String(padrao);
     const merged = {
       nome: data.nome ?? "",
       padrao: nextPadrao,
-      id_pessoa: data.id_pessoa ?? "",
       status: initial?.status ?? FICHA_STATUS.ACTIVE,
       itens,
     };
@@ -107,7 +105,6 @@ export default function FichaForm({ formId, initial, onSubmit }: FichaFormProps)
       initialData={{
         nome: initial?.nome ?? "",
         padrao: initial?.padrao ?? FICHA_PADRAO.A_B,
-        id_pessoa: initial?.id_pessoa != null ? String(initial.id_pessoa) : "",
       }}
       onSubmit={handleSubmit}
       placeholder={undefined}
@@ -127,7 +124,6 @@ export default function FichaForm({ formId, initial, onSubmit }: FichaFormProps)
               </MenuItem>
             ))}
           </Select>
-          <Input name="id_pessoa" label="ID pessoa (opcional)" />
         </Stack>
       </Box>
 

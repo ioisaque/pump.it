@@ -1,6 +1,11 @@
-import { Grid } from "@mui/material";
+import { Button, Grid, Stack } from "@mui/material";
 import type { DashboardStats } from "api/dashboard";
 import StatCard from "components/dash/StatCard";
+import Icon from "components/Icon";
+import { ALUNO_NIVEL_MAX } from "domain/pessoas/constants";
+import useAuth from "hooks/useAuth";
+import useTenantBase from "hooks/useTenantBase";
+import { Link as RouterLink } from "react-router-dom";
 
 type DashStatsSectionProps = {
   stats: DashboardStats | undefined;
@@ -8,14 +13,33 @@ type DashStatsSectionProps = {
 };
 
 export default function DashStatsSection({ stats, loading }: DashStatsSectionProps) {
-  const self = stats?.scope === "self";
+  const { base } = useTenantBase();
+  const { user } = useAuth();
+  const isCliente = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
+  const self = stats?.scope === "self" || isCliente;
   const alunos = stats?.alunos ?? 0;
   const acessos = stats?.acessos_hoje ?? 0;
   const atraso = stats?.mensalidades_atraso ?? 0;
   const fichas = stats?.fichas ?? 0;
 
   return (
-    <Grid container spacing={2} sx={{ mb: 2 }}>
+    <>
+      {isCliente ? (
+        <Stack direction="row" sx={{ mb: 2 }}>
+          <Button
+            component={RouterLink}
+            to={`${base}/checkin`}
+            variant="contained"
+            color="success"
+            startIcon={<Icon name="mdi:login" />}
+            sx={{ height: 40 }}
+          >
+            Check-in
+          </Button>
+        </Stack>
+      ) : null}
+
+      <Grid container spacing={2} sx={{ mb: 2 }}>
       {!self && (
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
@@ -25,7 +49,7 @@ export default function DashStatsSection({ stats, loading }: DashStatsSectionPro
             icon="mdi:account-group"
             color="#0076F3"
             loading={loading}
-            to="pessoas"
+            to={`${base}/pessoas`}
           />
         </Grid>
       )}
@@ -37,7 +61,7 @@ export default function DashStatsSection({ stats, loading }: DashStatsSectionPro
           icon="mdi:login"
           color="#33CC66"
           loading={loading}
-          to="acessos"
+          to={`${base}/acessos`}
         />
       </Grid>
       <Grid item xs={12} sm={6} md={self ? 4 : 3}>
@@ -48,7 +72,7 @@ export default function DashStatsSection({ stats, loading }: DashStatsSectionPro
           icon="mdi:alert-circle"
           color="#FF5356"
           loading={loading}
-          to="mensalidades"
+          to={`${base}/mensalidades`}
         />
       </Grid>
       <Grid item xs={12} sm={6} md={self ? 4 : 3}>
@@ -59,9 +83,10 @@ export default function DashStatsSection({ stats, loading }: DashStatsSectionPro
           icon="mdi:clipboard-list"
           color="#9900CC"
           loading={loading}
-          to="fichas"
+          to={`${base}/fichas`}
         />
       </Grid>
     </Grid>
+    </>
   );
 }

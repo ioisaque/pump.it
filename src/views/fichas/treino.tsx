@@ -1,4 +1,16 @@
-import { Alert, Box, IconButton, Link, Skeleton, Stack, Typography } from "@mui/material";
+import {
+    Alert,
+    Box,
+    Button,
+    ButtonBase,
+    CircularProgress,
+    Dialog,
+    IconButton,
+    Link,
+    Skeleton,
+    Stack,
+    Typography,
+} from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { listExercicios } from "api/exercicios";
 import { findFicha } from "api/fichas";
@@ -10,8 +22,8 @@ import { fichaQueryKey } from "domain/fichas/constants";
 import { formatDescanso } from "domain/fichas/formatters";
 import { FichaItem } from "domain/fichas/types";
 import useTenantBase from "hooks/useTenantBase";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useParams, useSearchParams } from "react-router-dom";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 const DIA_COLORS: Record<string, string> = {
   A: "#FF5356",
@@ -74,34 +86,76 @@ function ExercicioMedia({ exercicio }: { exercicio?: Exercicio }) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <Box
-      sx={{
-        flex: "1 1 40%",
-        minWidth: 0,
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor: "divider",
-        px: 1.5,
-        py: 1.25,
-      }}
-    >
-      <Typography variant="caption" color="text.secondary" display="block">
-        {label}
-      </Typography>
-      <Typography variant="h6" fontWeight={800} lineHeight={1.2}>
-        {value}
-      </Typography>
-    </Box>
+function Stat({
+  label,
+  value,
+  icon,
+  color,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  icon: string;
+  color: string;
+  onClick?: () => void;
+}) {
+  const dark = color === "#FFD22B";
+  const inner = (
+    <Stack direction="row" alignItems="center" spacing={1.25} sx={{ width: "100%" }}>
+      <Box sx={{ color, display: "flex", opacity: 0.95 }}>
+        <Icon name={icon} width={36} height={36} />
+      </Box>
+      <Box minWidth={0}>
+        <Typography variant="caption" display="block" sx={{ color: dark ? "rgba(0,0,0,0.55)" : "text.secondary" }}>
+          {label}
+        </Typography>
+        <Typography variant="h6" fontWeight={800} lineHeight={1.2} noWrap>
+          {value}
+        </Typography>
+      </Box>
+    </Stack>
   );
+  const sx = {
+    flex: "1 1 40%",
+    minWidth: 0,
+    borderRadius: 2,
+    px: 1.5,
+    py: 1.35,
+    textAlign: "left" as const,
+    bgcolor: `${color}22`,
+    color: dark ? "#333" : "text.primary",
+  };
+  if (onClick) {
+    return (
+      <ButtonBase onClick={onClick} sx={sx}>
+        {inner}
+      </ButtonBase>
+    );
+  }
+  return <Box sx={sx}>{inner}</Box>;
 }
 
-function TreinoSlide({ item, exercicio }: { item: FichaItem; exercicio?: Exercicio }) {
+function TreinoSlide({
+  item,
+  exercicio,
+  onRestEnd,
+}: {
+  item: FichaItem;
+  exercicio?: Exercicio;
+  onRestEnd: () => void;
+}) {
   const [descExpanded, setDescExpanded] = useState(false);
   const [descOverflows, setDescOverflows] = useState(false);
+  const [restOpen, setRestOpen] = useState(false);
+  const [restLeft, setRestLeft] = useState(0);
   const descRef = useRef<HTMLParagraphElement>(null);
+  const onRestEndRef = useRef(onRestEnd);
+  onRestEndRef.current = onRestEnd;
   const descricao = exercicio?.descricao?.trim() ?? "";
+  const descanso = item.descanso_segundos || 0;
+  const elapsed = Math.max(0, descanso - restLeft);
+  const restColor =
+    elapsed < (descanso * 2) / 4 ? "#33CC66" : elapsed < (descanso * 3) / 4 ? "#FFD22B" : "#FF5356";
 
   useLayoutEffect(() => {
     const el = descRef.current;
@@ -109,17 +163,96 @@ function TreinoSlide({ item, exercicio }: { item: FichaItem; exercicio?: Exercic
     setDescOverflows(el.scrollHeight > el.clientHeight + 1);
   }, [descricao, descExpanded]);
 
+  useEffect(() => {
+    if (!restOpen) return;
+    setRestLeft(descanso);
+    if (descanso <= 0) {
+      setRestOpen(false);
+      onRestEndRef.current();
+      return;
+    }
+    const t = window.setInterval(() => {
+      setRestLeft((s) => {
+        if (s <= 1) {
+          window.clearInterval(t);
+          window.setTimeout(() => {
+            setRestOpen(false);
+            onRestEndRef.current();
+          }, 0);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, [restOpen, descanso]);
+
   return (
     <Box sx={{ flex: "0 0 100%", width: "100%", scrollSnapAlign: "start", px: 0.5, boxSizing: "border-box" }}>
       <Box sx={{ borderRadius: 2, overflow: "hidden", mb: 2 }}>
         <ExercicioMedia exercicio={exercicio} />
       </Box>
       <Stack direction="row" flexWrap="wrap" useFlexGap spacing={1} sx={{ mb: 2 }}>
-        <Stat label="Séries" value={String(item.series)} />
-        <Stat label="Repetições" value={item.repeticoes || "—"} />
-        <Stat label="Carga" value={item.carga != null ? `${item.carga} kg` : "—"} />
-        <Stat label="Descanso" value={formatDescanso(item.descanso_segundos)} />
+        <Stat label="Séries" value={String(item.series)} icon="mdi:repeat" color="#0076F3" />
+        <Stat label="Repetições" value={item.repeticoes || "—"} icon="mdi:counter" color="#9900CC" />
+        <Stat label="Carga" value={item.carga != null ? `${item.carga} kg` : "—"} icon="mdi:weight-kilogram" color="#FFD22B" />
+        <Stat
+          label="Descanso"
+          value={formatDescanso(descanso)}
+          icon="mdi:timer-outline"
+          color="#FF5356"
+          onClick={() => setRestOpen(true)}
+        />
       </Stack>
+      <Dialog
+        open={restOpen}
+        onClose={() => setRestOpen(false)}
+        PaperProps={{
+          sx: {
+            borderRadius: "50%",
+            width: 280,
+            height: 280,
+            maxWidth: "80vw",
+            maxHeight: "80vw",
+            overflow: "visible",
+            bgcolor: "#fff",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <CircularProgress
+            variant="determinate"
+            value={100}
+            size="100%"
+            thickness={3.2}
+            sx={{ position: "absolute", color: `${restColor}33` }}
+          />
+          <CircularProgress
+            variant="determinate"
+            value={descanso ? (restLeft / descanso) * 100 : 0}
+            size="100%"
+            thickness={3.2}
+            sx={{
+              position: "absolute",
+              color: restColor,
+              transform: "rotate(-90deg) !important",
+            }}
+          />
+          <Typography variant="h2" fontWeight={800} sx={{ color: restColor, zIndex: 1 }}>
+            {formatDescanso(restLeft)}
+          </Typography>
+        </Box>
+      </Dialog>
       {descricao ? (
         <Box sx={{ mb: 2 }}>
           <Typography
@@ -160,8 +293,10 @@ function TreinoSlide({ item, exercicio }: { item: FichaItem; exercicio?: Exercic
 export default function FichaTreino() {
   const { id } = useParams();
   const [search] = useSearchParams();
+  const navigate = useNavigate();
   const { base } = useTenantBase();
   const dia = (search.get("dia") || "").toUpperCase();
+  const sessao = search.get("sessao") === "1";
   const fichaId = Number(id);
   const [index, setIndex] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -306,11 +441,27 @@ export default function FichaTreino() {
             }}
           >
             {itens.map((row) => (
-              <TreinoSlide key={`${row.dia}-${row.ordem}-${row.id_exercicio}`} item={row} exercicio={byId.get(row.id_exercicio)} />
+              <TreinoSlide
+                key={`${row.dia}-${row.ordem}-${row.id_exercicio}`}
+                item={row}
+                exercicio={byId.get(row.id_exercicio)}
+                onRestEnd={() => goTo(index + 1)}
+              />
             ))}
           </Box>
         </Box>
       )}
+
+      <Box sx={{ mt: 3, display: "flex", justifyContent: "center" }}>
+        <Button
+          size="small"
+          color="inherit"
+          onClick={() => navigate(sessao ? `${base}/checkin/resumo` : `${base}/fichas`)}
+          sx={{ color: "text.disabled", textTransform: "none", fontWeight: 400 }}
+        >
+          {sessao ? "Encerrar treino" : "Voltar às fichas"}
+        </Button>
+      </Box>
     </Box>
   );
 }

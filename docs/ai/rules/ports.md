@@ -9,7 +9,7 @@
 | **3005** | `cliente.isaque.it` | :3005 | SPA estática — sem PM2 |
 | **3006** | `barcode.it` | :3006 | pm2 `barcode.it` |
 | **3007** | `pump.it` (API) | :3007 | pm2 `pump-it` |
-| **3008** | `pump.it` (UI) | :3008 | SPA estática — sem PM2 |
+| **3008** | `pump.it` (UI) | isaque.local:3008 | SPA estática — sem PM2 |
 
 **Próximo Node livre:** `3009`, `3010`, …
 

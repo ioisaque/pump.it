@@ -7,6 +7,7 @@ import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { acessosRoutes } from "routes/acessos";
 import { authRoutes } from "routes/auth";
 import { avaliacoesRoutes } from "routes/avaliacoes";
+import { checkinRoutes } from "routes/checkin";
 import { configuracoesRoutes } from "routes/configuracoes";
 import { dashboardRoutes } from "routes/dashboard";
 import { exerciciosRoutes } from "routes/exercicios";
@@ -53,6 +54,7 @@ const AppRoutes: React.FC = () => {
       {fichasRoutes}
       {avaliacoesRoutes}
       {acessosRoutes}
+      {checkinRoutes}
       {mensalidadesRoutes}
       <Route element={<RequireStaff />}>
         {pessoasRoutes}

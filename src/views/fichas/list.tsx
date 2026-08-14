@@ -64,34 +64,18 @@ function FichaAlunoCard({ ficha, onPlay }: { ficha: Ficha; onPlay: (ficha: Ficha
         boxShadow: "none",
       }}
     >
-      <Box sx={{ display: "flex", minHeight: 148 }}>
-        <Box sx={{ width: 8, flexShrink: 0, bgcolor: ativa ? "secondary.main" : "action.disabled" }} />
+      <Box sx={{ display: "flex", minHeight: 148, alignItems: "center" }}>
+        <Box sx={{ width: 8, flexShrink: 0, alignSelf: "stretch", bgcolor: ativa ? "secondary.main" : "action.disabled" }} />
         <CardContent sx={{ flex: 1, py: 2.5, px: 2.5, "&:last-child": { pb: 2.5 } }}>
           <Stack spacing={2}>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" gap={1}>
-              <Box minWidth={0}>
-                <Typography variant="caption" color="text.secondary" fontWeight={600} letterSpacing={0.4}>
-                  #{String(ficha.id).padStart(5, "0")}
-                </Typography>
-                <Typography variant="h6" fontWeight={700} color="secondary.main" lineHeight={1.25} sx={{ mt: 0.25 }}>
-                  {ficha.nome}
-                </Typography>
-              </Box>
-              <IconButton
-                aria-label="Iniciar treino"
-                onClick={() => onPlay(ficha)}
-                sx={{
-                  width: 44,
-                  height: 44,
-                  bgcolor: "#33CC66",
-                  color: "#fff",
-                  flexShrink: 0,
-                  "&:hover": { bgcolor: "#2bb359" },
-                }}
-              >
-                <Icon name="mdi:play" width={26} height={26} />
-              </IconButton>
-            </Stack>
+            <Box minWidth={0}>
+              <Typography variant="caption" color="text.secondary" fontWeight={600} letterSpacing={0.4}>
+                #{String(ficha.id).padStart(5, "0")}
+              </Typography>
+              <Typography variant="h6" fontWeight={700} color="secondary.main" lineHeight={1.25} sx={{ mt: 0.25 }}>
+                {ficha.nome}
+              </Typography>
+            </Box>
 
             <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
               {dias.map((dia) => (
@@ -144,6 +128,21 @@ function FichaAlunoCard({ ficha, onPlay }: { ficha: Ficha; onPlay: (ficha: Ficha
             </Stack>
           </Stack>
         </CardContent>
+        <IconButton
+          aria-label="Iniciar treino"
+          onClick={() => onPlay(ficha)}
+          sx={{
+            width: 64,
+            height: 64,
+            mr: 2.5,
+            bgcolor: "#33CC66",
+            color: "#fff",
+            flexShrink: 0,
+            "&:hover": { bgcolor: "#2bb359" },
+          }}
+        >
+          <Icon name="mdi:play" width={36} height={36} />
+        </IconButton>
       </Box>
     </Card>
   );

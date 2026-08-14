@@ -51,6 +51,7 @@ const ROOT_PATH_SEGMENTS = new Set([
   "fichas",
   "avaliacoes",
   "acessos",
+  "checkin",
   "mensalidades",
   "tabelas",
   "notificacoes",

@@ -14,6 +14,7 @@ const ROOT_SEGMENTS = new Set([
   "fichas",
   "avaliacoes",
   "acessos",
+  "checkin",
   "mensalidades",
   "tabelas",
   "notificacoes",

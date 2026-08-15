@@ -46,7 +46,7 @@ const BACK_CALL: Partial<Record<AnatomiaGrupo, { ax: number; ay: number; side: "
   traps: { ax: 190, ay: 106, side: "right" },
   back: { ax: 214, ay: 128, side: "right" },
   triceps: { ax: 124, ay: 118, side: "left" },
-  glutes: { ax: 214, ay: 186, side: "right" },
+  glutes: { ax: 214, ay: 176, side: "right" },
   hams: { ax: 144, ay: 246, side: "left" },
   calves: { ax: 140, ay: 308, side: "left" },
 };
@@ -160,6 +160,13 @@ export default function AnatomiaFigure({
     WebkitMaskPosition: "center",
     maskPosition: "center",
     maskMode: "alpha" as const,
+  };
+
+  const overlayOnDark = {
+    ...overlayMask,
+    mixBlendMode: "hard-light" as const,
+    WebkitMaskImage: `url(${costasMask})`,
+    maskImage: `url(${costasMask})`,
   };
 
   const arrowSx = {
@@ -310,10 +317,6 @@ export default function AnatomiaFigure({
                 <path d="M126 94 C118 108 118 138 124 156 C134 160 142 146 140 120 C138 102 132 94 126 94 Z" />
                 <path d="M234 94 C242 108 242 138 236 156 C226 160 218 146 220 120 C222 102 228 94 234 94 Z" />
               </Overlay>
-              <Overlay fill={active.has("glutes") ? paint("glutes", byId.get("glutes")) : ""} dim={dimId("glutes")}>
-                <path d="M146 162 C136 176 140 198 160 210 C172 214 180 204 180 186 C176 168 162 158 146 162 Z" />
-                <path d="M214 162 C224 176 220 198 200 210 C188 214 180 204 180 186 C184 168 198 158 214 162 Z" />
-              </Overlay>
               <Overlay fill={active.has("hams") ? paint("hams", byId.get("hams")) : ""} dim={dimId("hams")}>
                 <path d="M144 218 C136 242 136 266 144 276 C156 280 168 266 170 242 C168 224 158 218 148 218 Z" />
                 <path d="M216 218 C224 242 224 266 216 276 C204 280 192 266 190 242 C192 224 202 218 212 218 Z" />
@@ -321,6 +324,12 @@ export default function AnatomiaFigure({
               <Overlay fill={active.has("calves") ? paint("calves", byId.get("calves")) : ""} dim={dimId("calves")}>
                 <path d="M140 286 C134 308 136 326 146 334 C156 334 164 316 162 296 C158 286 148 284 140 286 Z" />
                 <path d="M220 286 C226 308 224 326 214 334 C204 334 196 316 198 296 C202 286 212 284 220 286 Z" />
+              </Overlay>
+            </Box>
+            <Box component="svg" viewBox="0 0 360 360" sx={overlayOnDark}>
+              <Overlay fill={active.has("glutes") ? paint("glutes", byId.get("glutes")) : ""} dim={dimId("glutes")}>
+                <path d="M150 158 C140 168 142 182 158 190 C168 194 178 188 180 176 C176 164 164 154 150 158 Z" />
+                <path d="M210 158 C220 168 218 182 202 190 C192 194 182 188 180 176 C184 164 196 154 210 158 Z" />
               </Overlay>
             </Box>
           </Box>

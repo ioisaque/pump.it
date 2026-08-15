@@ -3,12 +3,13 @@ import { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import { useQuery } from "@tanstack/react-query";
 import { listAcademias } from "api/academias";
 import ActionIcon from "components/data-table/ActionIcon";
-import GridTable, { GRID_COL_ACTIONS_ONE } from "components/data-table/GridTable";
+import GridTable, { GRID_CELL_AVATAR_PX, GRID_COL_ACTIONS_ONE } from "components/data-table/GridTable";
 import StatusIcon from "components/data-table/StatusIcon";
 import TableActions from "components/data-table/TableActions";
 import Icon from "components/Icon";
 import EntityHeader from "components/layout/EntityHeader";
 import SearchInput from "components/SearchField";
+import UserAvatar from "components/UserAvatar";
 import { useStatusMutation } from "hooks/useStatusMutation";
 import { MouseEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -19,6 +20,8 @@ type AcademiaRow = {
   slug: string;
   nome: string;
   status: string;
+  logo?: string | null;
+  instagram?: string | null;
   cidade?: string | null;
   estado?: string | null;
   alunos_ativos?: number;
@@ -54,7 +57,43 @@ export default function AcademiasPage() {
 
   const columns: GridColDef<AcademiaRow>[] = useMemo(
     () => [
-      { field: "id", headerName: "ID", width: 80 },
+      {
+        field: "id",
+        headerName: "ID",
+        width: 88,
+        renderCell: (params) => (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 0.5,
+              py: 0.5,
+              width: "100%",
+            }}
+          >
+            <UserAvatar
+              foto={params.row.logo}
+              instagram={params.row.instagram}
+              name={params.row.nome}
+              size={GRID_CELL_AVATAR_PX}
+              fallbackIcon="mdi:domain"
+            />
+            <Box
+              component="span"
+              sx={{
+                fontSize: "0.75rem",
+                lineHeight: 1,
+                fontVariantNumeric: "tabular-nums",
+                color: "text.secondary",
+              }}
+            >
+              {String(params.value).padStart(4, "0")}
+            </Box>
+          </Box>
+        ),
+      },
       {
         field: "status",
         headerName: "Status",

@@ -5,6 +5,7 @@ import { ALUNO_NIVEL_MAX } from "domain/pessoas/constants";
 import useAuth from "hooks/useAuth";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { LINK, ROOT_SEGMENTS } from "utils/link";
+import { shouldShowInstallGate } from "utils/pwa-install";
 
 function pathForBoundAcademia(ownSlug: string, pathname: string, search: string) {
   const parts = pathname.split("/").filter(Boolean);
@@ -42,7 +43,8 @@ export default function RequireAuth() {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to={LINK("/login")} state={{ from: location }} replace />;
+    const to = shouldShowInstallGate() ? LINK("/install") : LINK("/login");
+    return <Navigate to={to} state={{ from: location }} replace />;
   }
 
   const ownSlug = user?.academia_slug || academia?.academia.slug;

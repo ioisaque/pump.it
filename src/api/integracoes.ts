@@ -79,6 +79,10 @@ export function getNotifyApiKey() {
   return api.get<{ apiKey: string }>(`${BASE}/notify/api-key`).then((r) => r.data);
 }
 
+export function getNotifyVapidPublicKey() {
+  return api.get<{ publicKey?: string }>(`${BASE}/notify/vapid-public-key`).then((r) => r.data);
+}
+
 export function testNotifyConnection(body?: { apiKey?: string }) {
   return api.post(`${BASE}/notify/test`, body ?? {}).then((r) => r.data);
 }

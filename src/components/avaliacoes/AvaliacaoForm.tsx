@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { FormHandles } from "@unform/core";
 import { Form } from "@unform/web";
 import { listPessoas } from "api/pessoas";
+import AvaliacaoAnatomiaMedidas from "components/avaliacoes/AvaliacaoAnatomiaMedidas";
 import AutocompleteSelect from "components/form/AutocompleteSelect";
 import FormDateInput from "components/form/FormDateInput";
 import Input from "components/form/Input";
@@ -100,78 +101,7 @@ export default function AvaliacaoForm({ formId, formRef, initialData, onSubmit, 
         </Grid>
       </Box>
 
-      <Box sx={pessoaSectionSx}>
-        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Perimetria (cm)
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={6} sm={3}>
-            <Input name="pescoco" label="Pescoço" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="ombro" label="Ombro" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="peito" label="Peito" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="cintura" label="Cintura" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="quadril" label="Quadril" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="braco_dir" label="Braço D" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="braco_esq" label="Braço E" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="antebraco_dir" label="Antebraço D" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="antebraco_esq" label="Antebraço E" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="coxa_dir" label="Coxa D" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="coxa_esq" label="Coxa E" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="panturrilha_dir" label="Panturrilha D" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={3}>
-            <Input name="panturrilha_esq" label="Panturrilha E" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-        </Grid>
-      </Box>
-
-      <Box sx={pessoaSectionSx}>
-        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Dobras cutâneas (mm)
-        </Typography>
-        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5 }}>
-          Opcional — protocolo típico de academia (tricipital, subescapular, abdominal, supra-ilíaca, coxa).
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={6} sm={4}>
-            <Input name="dobra_tricipital" label="Tricipital" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={4}>
-            <Input name="dobra_subescapular" label="Subescapular" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={4}>
-            <Input name="dobra_abdominal" label="Abdominal" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={4}>
-            <Input name="dobra_suprailiaca" label="Supra-ilíaca" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-          <Grid item xs={6} sm={4}>
-            <Input name="dobra_coxa" label="Coxa" type="number" inputProps={{ step: "0.1" }} />
-          </Grid>
-        </Grid>
-      </Box>
+      <AvaliacaoAnatomiaMedidas />
 
       {children}
     </Form>

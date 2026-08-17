@@ -30,6 +30,10 @@ export type AnatomiaGroupProp = {
   /** Cor do cadastro (`id_musculos`). Ignorada se `monocromatico`. */
   color?: string;
   icon?: string;
+  view?: "frente" | "costas";
+  ax?: number;
+  ay?: number;
+  side?: "left" | "right";
 };
 
 const FRONT_CALL: Partial<Record<AnatomiaGrupo, { ax: number; ay: number; side: "left" | "right" }>> = {
@@ -92,12 +96,26 @@ type AnatomiaFigureProps = {
   selectable?: boolean;
   /** `true`: tudo em `#FF5356`. Padrão `false`: cores do cadastro de músculos. */
   monocromatico?: boolean;
+  renderCallout?: (g: AnatomiaGroupProp) => ReactNode;
 };
+
+function resolveCall(
+  g: AnatomiaGroupProp,
+  view: "frente" | "costas",
+): { ax: number; ay: number; side: "left" | "right" } | null {
+  if (g.view && g.view !== view) return null;
+  if (g.ax != null && g.ay != null) {
+    return { ax: g.ax, ay: g.ay, side: g.side ?? "right" };
+  }
+  const map = view === "frente" ? FRONT_CALL : BACK_CALL;
+  return map[g.id] ?? null;
+}
 
 export default function AnatomiaFigure({
   groups,
   selectable = false,
   monocromatico = false,
+  renderCallout,
 }: AnatomiaFigureProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
@@ -141,8 +159,15 @@ export default function AnatomiaFigure({
     setSelected((cur) => (cur === id ? null : id));
   };
 
-  const callMap = index === 0 ? FRONT_CALL : BACK_CALL;
-  const callouts = groups.filter((g) => g.id in callMap);
+  const view: "frente" | "costas" = index === 0 ? "frente" : "costas";
+  const otherView: "frente" | "costas" = view === "frente" ? "costas" : "frente";
+  const callouts = groups.flatMap((g) => {
+    const visible = resolveCall(g, view);
+    const hiddenPos = resolveCall(g, otherView);
+    const c = visible ?? hiddenPos;
+    if (!c) return [];
+    return [{ g, c, hidden: !visible }];
+  });
 
   const overlayMask = {
     position: "absolute" as const,
@@ -349,13 +374,12 @@ export default function AnatomiaFigure({
           zIndex: 2,
         }}
       >
-        {callouts.map((g) => {
-          const c = callMap[g.id];
-          if (!c) return null;
+        {callouts.map(({ g, c, hidden }) => {
+          if (hidden || !c) return null;
           const x2 = c.side === "left" ? 36 : 324;
           const color = paint(g.id, g);
           return (
-            <g key={g.id} opacity={dimId(g.id) ? 0.25 : 1}>
+            <g key={`${g.id}-${g.text}`} opacity={dimId(g.id) ? 0.25 : 1}>
               <line x1={c.ax} y1={c.ay} x2={x2} y2={c.ay} stroke={color} strokeWidth={1.4} />
               <circle cx={c.ax} cy={c.ay} r={2.4} fill={color} />
             </g>
@@ -363,25 +387,26 @@ export default function AnatomiaFigure({
         })}
       </Box>
       <Box sx={{ position: "absolute", left: 0, right: 0, top: 0, aspectRatio: "1 / 1", zIndex: 3, pointerEvents: "none" }}>
-        {callouts.map((g) => {
-          const c = callMap[g.id];
+        {callouts.map(({ g, c, hidden }) => {
           if (!c) return null;
           const label = g.text;
           return (
             <Box
-              key={g.id}
+              key={`${g.id}-${g.text}`}
               onClick={() => toggle(g.id)}
               sx={{
+                display: hidden ? "none" : "block",
                 position: "absolute",
                 top: `calc(${(c.ay / 360) * 100}% - 12px)`,
                 left: c.side === "left" ? 6 : "auto",
                 right: c.side === "right" ? 6 : "auto",
-                pointerEvents: selectable ? "auto" : "none",
+                pointerEvents: selectable || renderCallout ? "auto" : "none",
                 cursor: selectable ? "pointer" : "default",
                 opacity: dimId(g.id) ? 0.35 : 1,
+                zIndex: 3,
               }}
             >
-              <Chip icon={iconFor(g.id, g)} nome={label} color={paint(g.id, g)} fontSize="72%" />
+              {renderCallout ? renderCallout(g) : <Chip icon={iconFor(g.id, g)} nome={label} color={paint(g.id, g)} fontSize="72%" />}
             </Box>
           );
         })}

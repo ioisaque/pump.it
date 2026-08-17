@@ -16,6 +16,7 @@ export type Pessoa = {
   contato?: string | null;
   instagram?: string | null;
   foto?: string | null;
+  anatomia_genero?: string | null;
   ip?: string | null;
   device?: string | null;
   visto_em?: string | null;

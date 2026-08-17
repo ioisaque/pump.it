@@ -1,6 +1,6 @@
 import { Box, Button } from "@mui/material";
 import { ErrorStyles } from "assets/css/error";
-import logo_light from "assets/imgs/logos/logo-light.svg";
+import logo_light from "assets/imgs/logos/logo-light.png";
 import { useNavigate } from "react-router-dom";
 
 function E503() {

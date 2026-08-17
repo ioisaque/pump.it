@@ -1,16 +1,18 @@
-import { Alert, Box, Button, Card, CardContent, Skeleton } from "@mui/material";
+import { Alert, Box, Button, Card, CardContent, Skeleton, Stack, Typography } from "@mui/material";
 import { GridColDef, GridRowParams } from "@mui/x-data-grid";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteAvaliacao, listAvaliacoes } from "api/avaliacoes";
+import { ANATOMIA_HIGHLIGHT } from "components/AnatomiaFigure";
 import ActionIcon from "components/data-table/ActionIcon";
 import GridTable from "components/data-table/GridTable";
 import TableActions from "components/data-table/TableActions";
 import Icon from "components/Icon";
 import EntityHeader from "components/layout/EntityHeader";
 import SearchInput from "components/SearchField";
-import { calcImc, formatAvaliacaoData } from "domain/avaliacoes/formatters";
+import { calcImc, classificacaoImc, formatAvaliacaoData } from "domain/avaliacoes/formatters";
 import { Avaliacao } from "domain/avaliacoes/types";
 import { ALUNO_NIVEL_MAX } from "domain/pessoas/constants";
+import useAnatomiaGenero from "hooks/useAnatomiaGenero";
 import useAuth from "hooks/useAuth";
 import { useMobileColumnVisibility } from "hooks/useMobileColumnVisibility";
 import useTenantBase from "hooks/useTenantBase";
@@ -21,6 +23,85 @@ import { apiBaseUrl } from "services/api";
 import { LINK } from "utils/link";
 
 const HIDE_ON_MOBILE = ["peso_kg", "altura_cm", "imc"] as const;
+
+function AvaliacaoAlunoCard({
+  row,
+  onOpen,
+}: {
+  row: Avaliacao;
+  onOpen: (row: Avaliacao) => void;
+}) {
+  const { assets } = useAnatomiaGenero();
+  const imc = calcImc(row.peso_kg, row.altura_cm);
+  const imcLabel = classificacaoImc(imc);
+
+  const stats = [
+    { label: "Peso", value: row.peso_kg == null ? "—" : `${row.peso_kg} kg` },
+    { label: "Altura", value: row.altura_cm == null ? "—" : `${row.altura_cm} cm` },
+    { label: "IMC", value: imc == null ? "—" : String(imc), hint: imcLabel },
+  ];
+
+  return (
+    <Card
+      variant="outlined"
+      onClick={() => onOpen(row)}
+      sx={{
+        borderRadius: 3,
+        overflow: "hidden",
+        borderColor: "divider",
+        boxShadow: "none",
+        cursor: "pointer",
+      }}
+    >
+      <Box sx={{ display: "flex", minHeight: 148, alignItems: "center" }}>
+        <Box
+          component="img"
+          src={assets.frente}
+          alt=""
+          draggable={false}
+          sx={{
+            width: 72,
+            height: 120,
+            ml: 1.5,
+            flexShrink: 0,
+            objectFit: "contain",
+            pointerEvents: "none",
+          }}
+        />
+        <CardContent sx={{ flex: 1, py: 2.5, px: 2.5, "&:last-child": { pb: 2.5 } }}>
+          <Stack spacing={2}>
+            <Box minWidth={0}>
+              <Typography variant="h6" fontWeight={700} color={ANATOMIA_HIGHLIGHT} lineHeight={1.25}>
+                {formatAvaliacaoData(row.data)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" fontWeight={600} letterSpacing={0.4}>
+                #{String(row.id).padStart(5, "0")}
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={3} flexWrap="wrap" useFlexGap>
+              {stats.map((s) => (
+                <Stack key={s.label} spacing={0.25}>
+                  <Typography variant="caption" color="text.secondary">
+                    {s.label}
+                  </Typography>
+                  <Typography variant="subtitle1" fontWeight={700}>
+                    {s.value}
+                  </Typography>
+                  {s.hint ? (
+                    <Typography variant="caption" color="text.secondary">
+                      {s.hint}
+                    </Typography>
+                  ) : null}
+                </Stack>
+              ))}
+            </Stack>
+          </Stack>
+        </CardContent>
+        <Box sx={{ width: 8, flexShrink: 0, alignSelf: "stretch", bgcolor: ANATOMIA_HIGHLIGHT }} />
+      </Box>
+    </Card>
+  );
+}
 
 export default function AvaliacoesList() {
   const navigate = useNavigate();
@@ -127,7 +208,7 @@ export default function AvaliacoesList() {
               filterable: false,
               renderCell: (params) => (
                 <TableActions>
-                  <ActionIcon icon="mdi:eye-outline" color="secondary.main" to={showPath(params.row.id)} />
+                  <ActionIcon icon="mdi:human" color="secondary.main" to={showPath(params.row.id)} />
                   <ActionIcon icon="line-md:edit" color="info.main" to={editPath(params.row.id)} />
                   <ActionIcon
                     icon="mdi:delete"
@@ -178,6 +259,48 @@ export default function AvaliacoesList() {
         </Alert>
       ) : null}
 
+      {isCliente ? (
+        <>
+          <Box sx={{ flexShrink: 0 }}>
+            <EntityHeader
+              left={
+                <SearchInput placeholder="Filtrar lista..." value={filter} onChange={(e) => setFilter(e.target.value)} />
+              }
+            />
+          </Box>
+          {isLoading ? (
+            <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+              {Array.from({ length: 3 }, (_, i) => (
+                <Skeleton
+                  key={`skeleton-${i}`}
+                  variant="rounded"
+                  width="100%"
+                  height={160}
+                  sx={{ margin: "10px 0px" }}
+                />
+              ))}
+            </Box>
+          ) : (
+            <Box sx={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+              {rows.length === 0 ? (
+                <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: "center" }}>
+                  Nenhuma avaliação encontrada.
+                </Typography>
+              ) : (
+                <Stack spacing={2} sx={{ pb: 1 }}>
+                  {rows.map((row) => (
+                    <AvaliacaoAlunoCard
+                      key={row.id}
+                      row={row}
+                      onOpen={(item) => navigate(showPath(item.id))}
+                    />
+                  ))}
+                </Stack>
+              )}
+            </Box>
+          )}
+        </>
+      ) : (
       <Card sx={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         <CardContent
           sx={{
@@ -195,18 +318,16 @@ export default function AvaliacoesList() {
                 <SearchInput placeholder="Filtrar lista..." value={filter} onChange={(e) => setFilter(e.target.value)} />
               }
               right={
-                isCliente ? undefined : (
-                  <Button
-                    variant="contained"
-                    color="success"
-                    sx={{ width: 140, height: 40 }}
-                    startIcon={<Icon name="mdi:plus" />}
-                    onClick={() => navigate(LINK("/avaliacoes/add"))}
-                    disabled={!hasAcademia}
-                  >
-                    Adicionar
-                  </Button>
-                )
+                <Button
+                  variant="contained"
+                  color="success"
+                  sx={{ width: 140, height: 40 }}
+                  startIcon={<Icon name="mdi:plus" />}
+                  onClick={() => navigate(LINK("/avaliacoes/add"))}
+                  disabled={!hasAcademia}
+                >
+                  Adicionar
+                </Button>
               }
             />
           </Box>
@@ -231,6 +352,7 @@ export default function AvaliacoesList() {
           )}
         </CardContent>
       </Card>
+      )}
     </Box>
   );
 }

@@ -2,7 +2,7 @@ import { Alert, Box, Button, Link, TextField, Typography, useMediaQuery } from "
 import { useQuery } from "@tanstack/react-query";
 import { findAcademiaPublic } from "api/academias";
 import { SignInStyles } from "assets/css/auth";
-import { BlobGreen, BlobRed, BlobYellow } from "assets/css/main";
+import { AppLogoDark, AppLogoLight, BlobGreen, BlobRed, BlobYellow } from "assets/css/main";
 import UserAvatar from "components/UserAvatar";
 import { User } from "contexts/AuthContext";
 import useAuth from "hooks/useAuth";
@@ -29,9 +29,9 @@ export default function SignInPage() {
   });
 
   const bg = prefersDark ? "#000000" : "#FFFFFF";
+  const logo = prefersDark ? AppLogoLight : AppLogoDark;
   const linkColor = prefersDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.6)";
   const subtitleColor = prefersDark ? "rgba(255,255,255,0.65)" : "rgba(26,26,26,0.6)";
-  const logoColor = prefersDark ? "#FFFFFF" : "#1a1a1a";
   const fieldSx = prefersDark
     ? {
         "& .MuiFilledInput-root": {
@@ -112,20 +112,12 @@ export default function SignInPage() {
           </Box>
         ) : (
           <>
-            <Typography
+            <Box
+              component="img"
               className="logo"
-              component="div"
-              sx={{
-                textAlign: "center",
-                fontWeight: 700,
-                fontSize: "2rem",
-                lineHeight: 1.2,
-                color: logoColor,
-                boxSizing: "border-box",
-              }}
-            >
-              pump.it
-            </Typography>
+              src={logo}
+              alt="pump.it"
+            />
             <Typography variant="body2" textAlign="center" sx={{ mb: 2, color: subtitleColor }}>
               Acesso master da plataforma
             </Typography>

@@ -11,7 +11,7 @@ View → useQuery/useMutation → api/*.ts → axios → API
 | Regra | Detalhe |
 |-------|---------|
 | Dialogs | `components/{entidade}/modals/`; estado **dentro** do dialog |
-| Listas | `EntityHeader` + `SearchInput` + `GridTable` |
+| Listas | `EntityHeader` (card branco) + `SearchInput` + `GridTable` |
 | Forms | `@unform/web` apenas — **proibido** `react-hook-form` |
 | Inputs | altura **40px**, `size="small"`, `compactInputRootSx()` |
 

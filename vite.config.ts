@@ -1,5 +1,6 @@
 import react from "@vitejs/plugin-react";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, loadEnv } from "vite";
@@ -9,8 +10,14 @@ const SHARED_CERT_DIR = path.resolve(__dirname, "../../../_certs/isaque.local");
 
 const ISAQUE_LOCAL_HOSTS = ["localhost", "isaque.local"] as const;
 
-function isIsaqueLocalHost(hostname: string): boolean {
-  return hostname === "isaque.local";
+function lanIpv4s(): string[] {
+  const ips: string[] = [];
+  for (const addrs of Object.values(os.networkInterfaces())) {
+    for (const a of addrs ?? []) {
+      if (a.family === "IPv4" && !a.internal) ips.push(a.address);
+    }
+  }
+  return ips;
 }
 
 function loadSharedHttps() {
@@ -24,9 +31,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
   const disableHmr = env.VITE_DISABLE_HMR === "true";
   const https = env.VITE_HTTPS === "false" ? undefined : loadSharedHttps();
-  const devOrigin = env.VITE_DEV_ORIGIN;
-  const devHostname = devOrigin ? new URL(devOrigin).hostname : "";
-  const viaIsaqueLocal = Boolean(devHostname) && isIsaqueLocalHost(devHostname);
+  const hmrHost = env.VITE_HMR_HOST?.trim();
 
   return {
     base: "/",
@@ -37,23 +42,16 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
       cors: true,
       https,
-      allowedHosts: [...ISAQUE_LOCAL_HOSTS],
-      origin: viaIsaqueLocal ? devOrigin : undefined,
+      allowedHosts: [...ISAQUE_LOCAL_HOSTS, ...lanIpv4s()],
       hmr: disableHmr
         ? false
-        : viaIsaqueLocal
+        : https
           ? {
-              host: env.VITE_HMR_HOST ?? "isaque.local",
-              protocol: (env.VITE_HMR_PROTOCOL ?? (https ? "wss" : "ws")) as "ws" | "wss",
+              protocol: (env.VITE_HMR_PROTOCOL ?? "wss") as "ws" | "wss",
               clientPort: Number(env.VITE_HMR_CLIENT_PORT ?? 3008),
+              ...(hmrHost ? { host: hmrHost } : {}),
             }
-          : https
-            ? {
-                host: env.VITE_HMR_HOST ?? "isaque.local",
-                protocol: "wss",
-                clientPort: Number(env.VITE_HMR_CLIENT_PORT ?? 3008),
-              }
-            : true,
+          : true,
       proxy: {
         "/api": {
           target: "http://127.0.0.1:3007",

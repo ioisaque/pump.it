@@ -1,14 +1,17 @@
 import { Box, Button, Container, Typography, useMediaQuery } from "@mui/material";
+import { useQuery } from "@tanstack/react-query";
+import { findAcademiaPublic } from "api/academias";
+import logoDark from "assets/imgs/logos/logo-dark.png";
+import logoLight from "assets/imgs/logos/logo-light.png";
 import Icon from "components/Icon";
 import { SAFE_AREA_TOP } from "components/layout/FakeStatusBar";
+import UserAvatar from "components/UserAvatar";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { applyAppChrome, applyPageChrome } from "utils/app-chrome";
-import { LINK } from "utils/link";
 import { BRAND_STRIPE_GRADIENT } from "utils/brand-stripe";
+import { LINK } from "utils/link";
 import { DISMISS_KEY, isIosDevice, isIosSafari, shouldShowInstallGate } from "utils/pwa-install";
-import logoDark from "assets/imgs/logos/logo-dark.svg";
-import logoLight from "assets/imgs/logos/logo-light.svg";
 
 const ACCENT = "#33CC66";
 
@@ -94,8 +97,15 @@ function IosInstallHint({ textMuted, boxBg }: { textMuted: string; boxBg: string
 
 export default function InstallPage() {
   const navigate = useNavigate();
+  const { academiaSlug } = useParams();
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
   const [deferred, setDeferred] = useState<NonNullable<Window["__pwaDeferredInstall"]> | null>(null);
+  const { data: academia } = useQuery({
+    queryKey: ["auth", "academia", academiaSlug],
+    queryFn: () => findAcademiaPublic(academiaSlug!),
+    enabled: Boolean(academiaSlug),
+    retry: 1,
+  });
 
   const bg = prefersDark ? "#000000" : "#FFFFFF";
   const text = prefersDark ? "#FFFFFF" : "#1a1a1a";
@@ -209,12 +219,26 @@ export default function InstallPage() {
             alignItems: "center",
           }}
         >
-          <Box
-            component="img"
-            src={logo}
-            alt="pump.it"
-            sx={{ width: "100%", maxWidth: 280, display: "block", mb: 2, px: 3 }}
-          />
+          {academiaSlug ? (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", mb: 2 }}>
+              <UserAvatar
+                foto={academia?.logo}
+                name={academia?.nome ?? academiaSlug}
+                size={96}
+                fallbackIcon="mdi:domain"
+              />
+              <Typography variant="h6" sx={{ mt: 1.5, color: text, fontWeight: 700 }}>
+                {academia?.nome ?? academiaSlug}
+              </Typography>
+            </Box>
+          ) : (
+            <Box
+              component="img"
+              src={logo}
+              alt="pump.it"
+              sx={{ width: "100%", maxWidth: 280, display: "block", mb: 2, px: 3 }}
+            />
+          )}
           <Typography
             variant="body1"
             sx={{ color: textMuted, lineHeight: 1.6, mt: 0, mb: 3, textAlign: "center", maxWidth: 360 }}

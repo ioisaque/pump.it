@@ -9,6 +9,7 @@ const E404 = lazy(() => import("views/error/404"));
 const E500 = lazy(() => import("views/error/500"));
 const E501 = lazy(() => import("views/error/501"));
 const E503 = lazy(() => import("views/error/503"));
+const EOffline = lazy(() => import("views/error/offline"));
 
 export const errorRoutes = (
   <>
@@ -20,6 +21,7 @@ export const errorRoutes = (
     <Route path="/500" element={<E500 />} />
     <Route path="/501" element={<E501 />} />
     <Route path="/503" element={<E503 />} />
+    <Route path="/offline" element={<EOffline />} />
     <Route path="*" element={<Navigate to="/404" replace />} />
   </>
 );

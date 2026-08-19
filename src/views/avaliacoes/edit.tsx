@@ -24,6 +24,8 @@ export default function AvaliacaoEdit() {
   const formRef = useRef<FormHandles>(null);
   const { user } = useAuth();
   const academiaFromQuery = Number(searchParams.get("academia_id"));
+  const pessoaFromQuery = Number(searchParams.get("pessoa"));
+  const pessoaId = Number.isFinite(pessoaFromQuery) && pessoaFromQuery > 0 ? pessoaFromQuery : 0;
   const academiaId =
     user?.academia_id && user.academia_id > 0
       ? user.academia_id
@@ -45,7 +47,7 @@ export default function AvaliacaoEdit() {
     onSuccess: async () => {
       toast.success("Avaliação salva.");
       await queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
-      navigate(LINK("/avaliacoes"));
+      navigate(pessoaId > 0 ? LINK(`/pessoas/${pessoaId}/edit`) : LINK("/avaliacoes"));
     },
     onError: (err: unknown) => {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;

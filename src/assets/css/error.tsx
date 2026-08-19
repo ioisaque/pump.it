@@ -79,6 +79,20 @@ main p {
   font-weight: 600;
 }
 
+main .btn {
+  width: 80%;
+  display: block;
+  color: white;
+  background: transparent;
+  margin: 5rem auto 0;
+  padding: 1.2rem 0.5rem;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 main .btn:hover {
   opacity: 0.85;
 }

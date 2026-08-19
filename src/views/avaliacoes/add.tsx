@@ -10,27 +10,30 @@ import { AvaliacaoFormValues } from "domain/avaliacoes/types";
 import useAuth from "hooks/useAuth";
 import { Fragment, useMemo, useRef } from "react";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { LINK } from "utils/link";
 
 const BTN_140 = { width: 140, height: 40 } as const;
 
 export default function AvaliacaoAdd() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const formRef = useRef<FormHandles>(null);
   const { user } = useAuth();
+  const pessoaFromQuery = Number(searchParams.get("pessoa"));
+  const pessoaId = Number.isFinite(pessoaFromQuery) && pessoaFromQuery > 0 ? pessoaFromQuery : 0;
 
   const initialData = useMemo<AvaliacaoFormValues>(
     () => ({
       academia_id: user?.academia_id && user.academia_id > 0 ? user.academia_id : "",
-      id_pessoa: "",
+      id_pessoa: pessoaId || "",
       data: "",
       peso_kg: "",
       altura_cm: "",
       observacoes: "",
     }),
-    [user?.academia_id],
+    [user?.academia_id, pessoaId],
   );
 
   async function handleSubmit(data: AvaliacaoFormValues) {
@@ -50,7 +53,7 @@ export default function AvaliacaoAdd() {
       });
       toast.success("Avaliação criada.");
       await queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
-      navigate(LINK("/avaliacoes"));
+      navigate(pessoaId > 0 ? LINK(`/pessoas/${pessoaId}/edit`) : LINK("/avaliacoes"));
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       toast.error(message || "Falha ao criar avaliação.");

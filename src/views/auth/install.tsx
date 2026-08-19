@@ -6,6 +6,7 @@ import logoLight from "assets/imgs/logos/logo-light.png";
 import Icon from "components/Icon";
 import { SAFE_AREA_TOP } from "components/layout/FakeStatusBar";
 import UserAvatar from "components/UserAvatar";
+import useAuth from "hooks/useAuth";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { applyAppChrome, applyPageChrome } from "utils/app-chrome";
@@ -97,6 +98,7 @@ function IosInstallHint({ textMuted, boxBg }: { textMuted: string; boxBg: string
 
 export default function InstallPage() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { academiaSlug } = useParams();
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
   const [deferred, setDeferred] = useState<NonNullable<Window["__pwaDeferredInstall"]> | null>(null);
@@ -116,6 +118,7 @@ export default function InstallPage() {
   const hintBoxBg = prefersDark ? "rgba(255,255,255,0.08)" : "rgba(26,26,26,0.05)";
   const onIos = isIosDevice();
   const loginTo = LINK("/login");
+  const afterGate = isAuthenticated ? LINK("/") : loginTo;
 
   useLayoutEffect(() => {
     applyAppChrome(bg, "page", bg, prefersDark ? "light" : "dark");
@@ -142,8 +145,8 @@ export default function InstallPage() {
   }, []);
 
   const goLogin = useCallback(() => {
-    navigate(loginTo, { replace: true });
-  }, [navigate, loginTo]);
+    navigate(afterGate, { replace: true });
+  }, [navigate, afterGate]);
 
   const dismissToLogin = useCallback(() => {
     sessionStorage.setItem(DISMISS_KEY, "1");
@@ -159,13 +162,12 @@ export default function InstallPage() {
     setDeferred(null);
     window.__pwaDeferredInstall = undefined;
     if (choice.outcome === "accepted") {
-      sessionStorage.setItem(DISMISS_KEY, "1");
       goLogin();
     }
   }, [deferred, goLogin]);
 
   if (!shouldShowInstallGate()) {
-    return <Navigate to={loginTo} replace />;
+    return <Navigate to={afterGate} replace />;
   }
 
   return (

@@ -1,16 +1,17 @@
+import { Box } from "@mui/material";
 import { GridColDef } from "@mui/x-data-grid";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addFlag, FlagKind, listFlags, saveFlag } from "api/flags";
+import Chip from "components/Chip";
 import ActionIcon from "components/data-table/ActionIcon";
 import GridCellTextField from "components/data-table/GridCellTextField";
 import GridTable, {
-    GRID_COL_ACTIONS_ONE,
     GRID_COL_ICONE_PICKER,
     GRID_COL_ROTULO,
     GRID_COL_STATUS,
+    GRID_ROW_MIN_HEIGHT_PX,
 } from "components/data-table/GridTable";
 import StatusIcon from "components/data-table/StatusIcon";
-import TableActions from "components/data-table/TableActions";
 import IconPicker from "components/IconPicker";
 import {
     TabelaPreviewItem,
@@ -23,6 +24,17 @@ import { useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 
 type AuditableKind = Exclude<FlagKind, "status">;
+
+const GRID_COL_CHIP = {
+  width: 180,
+  minWidth: 180,
+  maxWidth: 180,
+  flex: 0,
+  sortable: false,
+  filterable: false,
+  disableColumnMenu: true,
+  resizable: false,
+} as const;
 
 const AUDITABLE_CONFIG: Record<AuditableKind, { placeholder: string; queryKey: string[] }> = {
   niveis: { placeholder: "Novo nível", queryKey: ["tabelas", "niveis"] },
@@ -231,26 +243,46 @@ export default function FlagAuditableGrid({
         ),
       },
       {
-        field: "actions",
-        headerName: "Ações",
-        ...GRID_COL_ACTIONS_ONE,
-        renderCell: (params) =>
-          isNewFlagRow(params.row) ? (
-            <TableActions>
-              <ActionIcon
-                icon="ic:round-add"
-                color="success.main"
-                to="#add"
-                onClick={(e) => {
-                  e.preventDefault();
-                  createRow();
-                }}
-              />
-            </TableActions>
-          ) : null,
+        field: "preview",
+        headerName: "",
+        ...GRID_COL_CHIP,
+        renderCell: (params) => {
+          const nome = String(rowValue(params.row, "nome") ?? "").trim();
+          const icon = String(rowValue(params.row, "icon") ?? "");
+          const colorValue = String(rowValue(params.row, "color") ?? "");
+          return (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                width: "100%",
+                height: "100%",
+                minHeight: GRID_ROW_MIN_HEIGHT_PX,
+                gap: 0.5,
+                overflow: "hidden",
+                px: 0.5,
+              }}
+            >
+              {nome ? (
+                <Chip icon={icon || undefined} text={nome} bgColor={colorValue || "#eceff1"} txtColor="#fff" />
+              ) : null}
+              {isNewFlagRow(params.row) ? (
+                <ActionIcon
+                  icon="ic:round-add"
+                  color="success.main"
+                  to="#add"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    createRow();
+                  }}
+                />
+              ) : null}
+            </Box>
+          );
+        },
       },
     ],
-    [toggleStatusMutation, saveMutation, createMutation],
+    [toggleStatusMutation, saveMutation, createMutation, drafts, newRow],
   );
 
   return (

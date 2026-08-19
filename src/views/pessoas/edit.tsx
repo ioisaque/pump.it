@@ -6,8 +6,7 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    MenuItem,
-    Select,
+    Grid,
     Skeleton,
     Stack,
     TextField,
@@ -18,7 +17,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormHandles } from "@unform/core";
 import { Form } from "@unform/web";
 import { findAcademia, findAcademiaPublic, listAcademias } from "api/academias";
-import { desvincularFichaAluno, listFichas, vincularFichaAluno } from "api/fichas";
 import { deletePessoa } from "api/pessoas";
 import axios from "axios";
 import Chip from "components/Chip";
@@ -27,8 +25,8 @@ import Icon from "components/Icon";
 import LastUpdated from "components/LastUpdated";
 import EntityHeader from "components/layout/EntityHeader";
 import EditForm from "components/pessoas/EditForm";
-import { formatPadraoLabel } from "domain/fichas/formatters";
-import { Ficha } from "domain/fichas/types";
+import PessoaAvaliacoes from "components/pessoas/PessoaAvaliacoes";
+import PessoaFichas from "components/pessoas/PessoaFichas";
 import { PESSOA_NIVEL } from "domain/pessoas/constants";
 import { resolveFlags } from "domain/tabelas/types";
 import useAuth from "hooks/useAuth";
@@ -42,135 +40,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiOrigin } from "services/api";
 import { LINK } from "utils/link";
 import { buildPessoaFormInitialData, submitPessoaUpdate } from "utils/pessoas/form";
-import { pessoaSectionSx } from "utils/pessoas/styles";
 
 const btnSx = { height: 50, minWidth: 50, px: 1 } as const;
 
 function formatPessoaShortId(id: string | number): string {
   return String(id).padStart(4, "0");
-}
-
-function PessoaFichas({ pessoaId }: { pessoaId: number }) {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [modeloId, setModeloId] = useState("");
-
-  const { data: fichas = [], isLoading } = useQuery({
-    queryKey: ["fichas", "pessoa", pessoaId],
-    queryFn: () => listFichas({ id_pessoa: pessoaId }),
-  });
-
-  const { data: modelos = [] } = useQuery({
-    queryKey: ["fichas", "modelos"],
-    queryFn: () => listFichas({ escopo: "modelos" }),
-  });
-
-  const vincular = useMutation({
-    mutationFn: (fichaId: number) => vincularFichaAluno(fichaId, pessoaId),
-    onSuccess: async () => {
-      toast.success("Plano vinculado.");
-      setModeloId("");
-      await queryClient.invalidateQueries({ queryKey: ["fichas", "pessoa", pessoaId] });
-    },
-    onError: () => toast.error("Não foi possível vincular o plano."),
-  });
-
-  const desvincular = useMutation({
-    mutationFn: (fichaId: number) => desvincularFichaAluno(fichaId, pessoaId),
-    onSuccess: async () => {
-      toast.success("Plano desvinculado.");
-      await queryClient.invalidateQueries({ queryKey: ["fichas", "pessoa", pessoaId] });
-    },
-    onError: () => toast.error("Não foi possível desvincular."),
-  });
-
-  const jaVinculados = new Set(fichas.map((f) => f.id));
-  const disponiveis = modelos.filter((m) => !jaVinculados.has(m.id));
-
-  return (
-    <Box sx={{ ...pessoaSectionSx, mt: 2 }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" useFlexGap gap={1} sx={{ mb: 2 }}>
-        <Typography variant="subtitle1" fontWeight={600}>
-          Planos de treino
-        </Typography>
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Select
-            size="small"
-            displayEmpty
-            value={modeloId}
-            onChange={(e) => setModeloId(String(e.target.value))}
-            sx={{ minWidth: 220 }}
-          >
-            <MenuItem value="">
-              <em>Escolher modelo</em>
-            </MenuItem>
-            {disponiveis.map((m) => (
-              <MenuItem key={m.id} value={String(m.id)}>
-                {m.nome} ({formatPadraoLabel(String(m.padrao))})
-              </MenuItem>
-            ))}
-          </Select>
-          <Button
-            variant="contained"
-            color="success"
-            disabled={!modeloId || vincular.isLoading}
-            onClick={() => vincular.mutate(Number(modeloId))}
-          >
-            Vincular
-          </Button>
-        </Stack>
-      </Stack>
-      {isLoading ? (
-        <Skeleton variant="rounded" height={48} />
-      ) : fichas.length === 0 ? (
-        <Typography variant="body2" color="text.secondary">
-          Nenhum plano vinculado. Escolha um modelo acima.
-        </Typography>
-      ) : (
-        <Stack spacing={1}>
-          {fichas.map((ficha: Ficha) => (
-            <Stack
-              key={ficha.id}
-              direction={{ xs: "column", sm: "row" }}
-              spacing={1}
-              alignItems={{ sm: "center" }}
-              justifyContent="space-between"
-            >
-              <Box minWidth={0}>
-                <Typography variant="body2" fontWeight={600} noWrap>
-                  {ficha.nome}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {formatPadraoLabel(String(ficha.padrao))}
-                  {ficha.modelo ? " · modelo" : " · personalizada"}
-                  {(ficha.alunos_count ?? 0) > 1 ? ` · ${ficha.alunos_count} alunos` : ""}
-                </Typography>
-              </Box>
-              <Stack direction="row" spacing={1}>
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="info"
-                  onClick={() => navigate(LINK(`/workout-plans/${ficha.id}/edit`, { pessoa: pessoaId }))}
-                >
-                  Editar
-                </Button>
-                <Button
-                  size="small"
-                  variant="contained"
-                  color="error"
-                  disabled={desvincular.isLoading}
-                  onClick={() => desvincular.mutate(ficha.id)}
-                >
-                  Desvincular
-                </Button>
-              </Stack>
-            </Stack>
-          ))}
-        </Stack>
-      )}
-    </Box>
-  );
 }
 
 function PessoaEdit() {
@@ -544,7 +418,14 @@ function PessoaEdit() {
           onFotoDrop={onFotoDrop}
         />
       </Form>
-      <PessoaFichas pessoaId={pessoa.id} />
+      <Grid container spacing={2} sx={{ mt: 0 }}>
+        <Grid item xs={12} md={6} sx={{ minWidth: 0 }}>
+          <PessoaFichas pessoaId={pessoa.id} />
+        </Grid>
+        <Grid item xs={12} md={6} sx={{ minWidth: 0 }}>
+          <PessoaAvaliacoes pessoaId={pessoa.id} />
+        </Grid>
+      </Grid>
     </Fragment>
   );
 }

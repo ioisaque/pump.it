@@ -10,6 +10,7 @@ import {
     Stack,
     Typography,
 } from "@mui/material";
+import GridColorPicker from "components/data-table/GridColorPicker";
 import Icon from "components/Icon";
 import { useMobileDialog } from "hooks/useMobileDialog";
 import { useCallback, useEffect, useState } from "react";
@@ -22,6 +23,8 @@ type FotoCropDialogProps = {
   onClose: () => void;
   onConfirm: (file: File) => void;
 };
+
+const FUNDO_ATALHOS = ["#ffffff", "#000000", "#FF5356", "#33CC66", "#0076F3", "#FFD22B", "#9900CC", "#F5617F"];
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -45,11 +48,30 @@ function rotatedBounds(width: number, height: number, rotation: number) {
   };
 }
 
+async function imageHasAlpha(src: string): Promise<boolean> {
+  const image = await loadImage(src);
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return false;
+
+  const w = Math.min(image.width, 256);
+  const h = Math.min(image.height, 256);
+  canvas.width = w;
+  canvas.height = h;
+  ctx.drawImage(image, 0, 0, w, h);
+  const data = ctx.getImageData(0, 0, w, h).data;
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] < 255) return true;
+  }
+  return false;
+}
+
 async function cropToJpegFile(
   imageSrc: string,
   pixelCrop: Area,
   rotation: number,
   fileName: string,
+  fillColor?: string,
 ): Promise<File> {
   const image = await loadImage(imageSrc);
   const canvas = document.createElement("canvas");
@@ -59,6 +81,11 @@ async function cropToJpegFile(
   const { width: bBoxWidth, height: bBoxHeight } = rotatedBounds(image.width, image.height, rotation);
   canvas.width = bBoxWidth;
   canvas.height = bBoxHeight;
+
+  if (fillColor) {
+    ctx.fillStyle = fillColor;
+    ctx.fillRect(0, 0, bBoxWidth, bBoxHeight);
+  }
 
   ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
   ctx.rotate(toRadians(rotation));
@@ -71,6 +98,10 @@ async function cropToJpegFile(
 
   cropped.width = pixelCrop.width;
   cropped.height = pixelCrop.height;
+  if (fillColor) {
+    croppedCtx.fillStyle = fillColor;
+    croppedCtx.fillRect(0, 0, pixelCrop.width, pixelCrop.height);
+  }
   croppedCtx.drawImage(
     canvas,
     pixelCrop.x,
@@ -108,6 +139,8 @@ export default function FotoCropDialog({
   const [rotation, setRotation] = useState(0);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [busy, setBusy] = useState(false);
+  const [hasAlpha, setHasAlpha] = useState(false);
+  const [bgColor, setBgColor] = useState("#ffffff");
 
   useEffect(() => {
     if (!open) return;
@@ -116,6 +149,20 @@ export default function FotoCropDialog({
     setRotation(0);
     setCroppedAreaPixels(null);
     setBusy(false);
+    setHasAlpha(false);
+    setBgColor("#ffffff");
+    if (!imageSrc) return;
+    let cancelled = false;
+    imageHasAlpha(imageSrc)
+      .then((alpha) => {
+        if (!cancelled) setHasAlpha(alpha);
+      })
+      .catch(() => {
+        if (!cancelled) setHasAlpha(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [open, imageSrc]);
 
   const onCropComplete = useCallback((_: Area, pixels: Area) => {
@@ -126,7 +173,13 @@ export default function FotoCropDialog({
     if (!imageSrc || !croppedAreaPixels || busy) return;
     setBusy(true);
     try {
-      const file = await cropToJpegFile(imageSrc, croppedAreaPixels, rotation, fileName);
+      const file = await cropToJpegFile(
+        imageSrc,
+        croppedAreaPixels,
+        rotation,
+        fileName,
+        hasAlpha ? bgColor : undefined,
+      );
       onConfirm(file);
       onClose();
     } catch {
@@ -148,7 +201,7 @@ export default function FotoCropDialog({
             position: "relative",
             width: "100%",
             height: mobileDialog.fullScreen ? "min(60vh, 420px)" : 280,
-            bgcolor: "#111",
+            bgcolor: hasAlpha ? bgColor : "#111",
             borderRadius: 1,
             overflow: "hidden",
           }}
@@ -162,6 +215,11 @@ export default function FotoCropDialog({
               aspect={1}
               cropShape="round"
               showGrid={false}
+              style={{
+                containerStyle: {
+                  background: hasAlpha ? bgColor : "#111",
+                },
+              }}
               onCropChange={setCrop}
               onZoomChange={setZoom}
               onRotationChange={setRotation}
@@ -171,6 +229,39 @@ export default function FotoCropDialog({
         </Box>
 
         <Stack spacing={1.5} sx={{ mt: 2 }}>
+          {hasAlpha ? (
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Fundo
+              </Typography>
+              <Stack direction="row" alignItems="center" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 0.5 }}>
+                <Box sx={{ width: 28, height: 28, flexShrink: 0 }}>
+                  <GridColorPicker value={bgColor} onChange={setBgColor} readOnly={busy} />
+                </Box>
+                {FUNDO_ATALHOS.map((hex) => (
+                  <Box
+                    key={hex}
+                    component="button"
+                    type="button"
+                    aria-label={`Fundo ${hex}`}
+                    disabled={busy}
+                    onClick={() => setBgColor(hex)}
+                    sx={{
+                      width: 28,
+                      height: 28,
+                      p: 0,
+                      bgcolor: hex,
+                      border: "1px solid",
+                      borderColor: bgColor.toLowerCase() === hex.toLowerCase() ? "success.main" : "text.secondary",
+                      borderRadius: 1,
+                      cursor: "pointer",
+                      flexShrink: 0,
+                    }}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          ) : null}
           <Box>
             <Typography variant="caption" color="text.secondary">
               Zoom

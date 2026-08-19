@@ -16,7 +16,6 @@ function needsNotificationPermission() {
 export default function PwaPermissionsGate({ children }: { children: ReactNode }) {
   const { enablePush } = usePushNotifications();
   const [pending, setPending] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(false);
   const [notificationDenied, setNotificationDenied] = useState(false);
 
   const refresh = useCallback(() => {
@@ -77,17 +76,12 @@ export default function PwaPermissionsGate({ children }: { children: ReactNode }
   }
 
   async function handleActivate() {
-    setLoading(true);
-    try {
-      await enablePush();
-      if (Notification.permission === "granted") {
-        setNotificationDenied(false);
-        refresh();
-      } else {
-        setNotificationDenied(true);
-      }
-    } finally {
-      setLoading(false);
+    await enablePush();
+    if (Notification.permission === "granted") {
+      setNotificationDenied(false);
+      refresh();
+    } else {
+      setNotificationDenied(true);
     }
   }
 
@@ -126,11 +120,10 @@ export default function PwaPermissionsGate({ children }: { children: ReactNode }
           fullWidth
           variant="contained"
           color="success"
-          disabled={loading}
           onClick={() => void handleActivate()}
           sx={{ py: 1.5 }}
         >
-          {loading ? <CircularProgress size={22} color="inherit" /> : "Ativar notificações"}
+          Ativar notificações
         </Button>
       </Box>
     </Box>

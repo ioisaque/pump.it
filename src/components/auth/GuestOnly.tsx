@@ -2,11 +2,12 @@ import { Backdrop, CircularProgress } from "@mui/material";
 import useAuth from "hooks/useAuth";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { LINK } from "utils/link";
-import { shouldShowInstallGate } from "utils/pwa-install";
+import { useShouldShowInstallGate } from "utils/pwa-install";
 
 export default function GuestOnly() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isLoading } = useAuth();
   const location = useLocation();
+  const showInstall = useShouldShowInstallGate();
 
   if (isLoading) {
     return (
@@ -23,11 +24,7 @@ export default function GuestOnly() {
     );
   }
 
-  if (isAuthenticated) {
-    return <Outlet />;
-  }
-
-  if (shouldShowInstallGate() && location.pathname.endsWith("/login")) {
+  if (showInstall && location.pathname.endsWith("/login")) {
     return <Navigate to={LINK("/install")} replace />;
   }
 

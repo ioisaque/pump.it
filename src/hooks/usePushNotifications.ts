@@ -28,10 +28,6 @@ async function ensurePushSubscription(registration: ServiceWorkerRegistration) {
   await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey });
 }
 
-/**
- * Android 13+ WebAPK mapeia “ainda não perguntou” para `denied`.
- * Sempre pedir de novo no clique e assinar push (é o que abre o diálogo do sistema).
- */
 export function usePushNotifications() {
   const [status, setStatus] = useState<PushStatus>(() => {
     if (!detectPushSupport()) return "unsupported";
@@ -46,31 +42,27 @@ export function usePushNotifications() {
       return;
     }
 
-    setStatus("loading");
-
     try {
+      let permission = Notification.permission;
+      if (permission !== "granted") {
+        permission = await Notification.requestPermission();
+      }
+      if (permission !== "granted") {
+        setStatus("denied");
+        toast.error("Permissão de notificação negada.");
+        return;
+      }
+
+      setStatus("loading");
       const swUrl = `${import.meta.env.BASE_URL}sw.js`;
       const registration = await navigator.serviceWorker.register(swUrl, {
         scope: import.meta.env.BASE_URL,
       });
       await navigator.serviceWorker.ready;
-
-      let permission = Notification.permission;
-      if (permission !== "granted") {
-        permission = await Notification.requestPermission();
-      }
-
       try {
         await ensurePushSubscription(registration);
       } catch {
-        /* VAPID/notify pode falhar; o diálogo do SO já deve ter rodado no request/subscribe */
-      }
-
-      permission = Notification.permission;
-      if (permission !== "granted") {
-        setStatus("denied");
-        toast.error("Permissão de notificação negada.");
-        return;
+        /* VAPID/notify pode falhar; permissão do SO já foi concedida */
       }
 
       setStatus("subscribed");

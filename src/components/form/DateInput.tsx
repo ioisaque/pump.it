@@ -6,12 +6,12 @@ import Icon from "components/Icon";
 import { ptBR } from "date-fns/locale";
 import { calendarDateUTC } from "domain/datahora/calendar-utc";
 import {
-  dateToISO,
-  formatBrDateInputShort,
-  maskBrDateInputTyping,
-  parseBrDateInputToStorage,
-  parseStorageDate,
-  TODAY,
+    dateToISO,
+    formatBrDateInputShort,
+    maskBrDateInputTyping,
+    parseBrDateInputToStorage,
+    parseStorageDate,
+    TODAY,
 } from "domain/datahora/types";
 import { ChangeEvent, Ref, useEffect, useRef, useState } from "react";
 import { Calendar } from "react-date-range";
@@ -160,10 +160,10 @@ export default function DateInput({
         placement="bottom-start"
         modifiers={[
           { name: "offset", options: { offset: [0, 8] } },
-          { name: "flip", enabled: false },
-          { name: "preventOverflow", options: { padding: 8 } },
+          { name: "flip", options: { fallbackPlacements: ["top-start", "bottom-end", "top-end"] } },
+          { name: "preventOverflow", options: { padding: 8, boundary: "viewport" } },
         ]}
-        sx={{ zIndex: (theme) => theme.zIndex.modal }}
+        sx={{ zIndex: (theme) => theme.zIndex.modal + 2 }}
       >
         <ClickAwayListener
           onClickAway={(event) => {

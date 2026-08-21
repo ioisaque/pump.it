@@ -58,6 +58,7 @@ export default function AvaliacaoForm({ formId, formRef, initialData, onSubmit, 
           ...data,
           id_pessoa: pessoaId || data.id_pessoa,
           academia_id: data.academia_id || academiaId || "",
+          protocolo: data.protocolo || "jp7",
         })
       }
       placeholder={undefined}
@@ -95,8 +96,20 @@ export default function AvaliacaoForm({ formId, formRef, initialData, onSubmit, 
           <Grid item xs={12} sm={6}>
             <Input name="altura_cm" label="Altura (cm)" type="number" inputProps={{ step: "0.1" }} />
           </Grid>
+          <Grid item xs={12} sm={6}>
+            <Input name="protocolo" sx={{ display: "none" }} />
+            <Input name="gordura_objetivo_pct" label="% gordura objetivo" type="number" inputProps={{ step: "0.1" }} />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <Typography variant="body2" color="text.secondary" sx={{ pt: { sm: 2 } }}>
+              Protocolo: Jackson & Pollock - 7
+            </Typography>
+          </Grid>
           <Grid item xs={12}>
             <Input name="observacoes" label="Observações" multiline minRows={3} />
+          </Grid>
+          <Grid item xs={12}>
+            <Input name="risco_coronariano" label="Risco coronariano" multiline minRows={2} />
           </Grid>
         </Grid>
       </Box>

@@ -46,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Planos de treino", icon: "mdi:clipboard-list-outline", path: "/workout-plans", tenantOnly: true },
   { label: "Avaliações", icon: "mdi:clipboard-pulse-outline", path: "/avaliacoes", tenantOnly: true },
   { label: "Check-in", icon: "mdi:login", path: "/workout/add", tenantOnly: true, alunoOnly: true },
+  { label: "Questionário Pessoal", icon: "mdi:clipboard-text-outline", path: "/anamnese", tenantOnly: true, alunoOnly: true },
   { label: "Check-ins", icon: "mdi:door-open", path: "/acessos", tenantOnly: true, staffOnly: true },
   { label: "Mensalidades", icon: "mdi:cash-multiple", path: "/mensalidades", tenantOnly: true },
   { label: "Tabelas", icon: "mdi:table-cog", path: "/tabelas", staffOnly: true },

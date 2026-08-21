@@ -1,6 +1,7 @@
 import { Box, LinearProgress, Typography } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { getDashboardStats } from "api/dashboard";
+import AnamnesePendenteAlert from "components/dash/AnamnesePendenteAlert";
 import DashStatsSection from "components/dash/DashStatsSection";
 
 export default function MainDashboard() {
@@ -17,6 +18,8 @@ export default function MainDashboard() {
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {stats?.scope === "self" ? "Seu resumo" : "Resumo da academia"}
       </Typography>
+
+      {stats?.anamnese_pendente ? <AnamnesePendenteAlert /> : null}
 
       <DashStatsSection stats={stats} loading={isLoading} />
 

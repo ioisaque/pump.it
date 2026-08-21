@@ -32,6 +32,8 @@ export default function AvaliacaoAdd() {
       peso_kg: "",
       altura_cm: "",
       observacoes: "",
+      protocolo: "jp7",
+      gordura_objetivo_pct: 11,
     }),
     [user?.academia_id, pessoaId],
   );

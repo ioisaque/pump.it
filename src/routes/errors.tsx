@@ -22,6 +22,7 @@ export const errorRoutes = (
     <Route path="/501" element={<E501 />} />
     <Route path="/503" element={<E503 />} />
     <Route path="/offline" element={<EOffline />} />
-    <Route path="*" element={<Navigate to="/404" replace />} />
   </>
 );
+
+export const errorFallbackRoute = <Route path="*" element={<Navigate to="/404" replace />} />;

@@ -22,6 +22,7 @@ type FotoCropDialogProps = {
   fileName?: string;
   onClose: () => void;
   onConfirm: (file: File) => void;
+  onReplace?: () => void;
 };
 
 const FUNDO_ATALHOS = ["#ffffff", "#000000", "#FF5356", "#33CC66", "#0076F3", "#FFD22B", "#9900CC", "#F5617F"];
@@ -132,6 +133,7 @@ export default function FotoCropDialog({
   fileName = "foto.jpg",
   onClose,
   onConfirm,
+  onReplace,
 }: FotoCropDialogProps) {
   const mobileDialog = useMobileDialog("xs");
   const [crop, setCrop] = useState({ x: 0, y: 0 });
@@ -296,13 +298,25 @@ export default function FotoCropDialog({
           </Stack>
         </Stack>
       </DialogContent>
-      <DialogActions sx={{ px: 2, py: 1.5 }}>
-        <Button onClick={onClose} disabled={busy} color="inherit">
-          Cancelar
-        </Button>
-        <Button onClick={handleConfirm} disabled={busy || !croppedAreaPixels} variant="contained" color="success">
-          {busy ? "Aplicando…" : "Usar foto"}
-        </Button>
+      <DialogActions sx={{ px: 2, py: 1.5, justifyContent: onReplace ? "space-between" : undefined }}>
+        {onReplace ? (
+          <Button
+            onClick={onReplace}
+            disabled={busy}
+            color="inherit"
+            startIcon={<Icon name="mdi:image-plus-outline" width={18} />}
+          >
+            Substituir
+          </Button>
+        ) : null}
+        <Box sx={{ display: "flex", gap: 1, ml: "auto" }}>
+          <Button onClick={onClose} disabled={busy} color="inherit">
+            Cancelar
+          </Button>
+          <Button onClick={handleConfirm} disabled={busy || !croppedAreaPixels} variant="contained" color="success">
+            {busy ? "Aplicando…" : "Usar foto"}
+          </Button>
+        </Box>
       </DialogActions>
     </Dialog>
   );

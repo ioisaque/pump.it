@@ -97,16 +97,24 @@ export async function tryRefreshAccessToken(): Promise<string | null> {
   return refreshInFlight;
 }
 
+function isAuthSessionUrl(url: string): boolean {
+  return /auth\/(login|logout|refresh)/i.test(url);
+}
+
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-    if (error.response?.status === 401 && original && !original._retry && canPersistSession()) {
+    if (error.response?.status === 401 && original && !original._retry) {
       original._retry = true;
-      const refreshed = await tryRefreshAccessToken();
-      if (refreshed) {
-        original.headers.Authorization = `Bearer ${refreshed}`;
-        return api.request(original);
+      const requestUrl = original.url ?? "";
+      if (!isAuthSessionUrl(requestUrl)) {
+        const refreshed = await tryRefreshAccessToken();
+        if (refreshed) {
+          original.headers.Authorization = `Bearer ${refreshed}`;
+          return api.request(original);
+        }
+        window.dispatchEvent(new Event("auth:session-expired"));
       }
     }
     return Promise.reject(error);

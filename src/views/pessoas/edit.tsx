@@ -6,7 +6,6 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    Grid,
     Skeleton,
     Stack,
     TextField,
@@ -25,9 +24,8 @@ import Icon from "components/Icon";
 import LastUpdated from "components/LastUpdated";
 import EntityHeader from "components/layout/EntityHeader";
 import EditForm from "components/pessoas/EditForm";
-import PessoaAvaliacoes from "components/pessoas/PessoaAvaliacoes";
-import PessoaFichas from "components/pessoas/PessoaFichas";
-import { PESSOA_NIVEL } from "domain/pessoas/constants";
+import PessoaAcompanhamento from "components/pessoas/PessoaAcompanhamento";
+import { ALUNO_NIVEL_MAX, PESSOA_NIVEL } from "domain/pessoas/constants";
 import { resolveFlags } from "domain/tabelas/types";
 import useAuth from "hooks/useAuth";
 import { useFlagCatalogs } from "hooks/useFlagCatalogs";
@@ -54,6 +52,8 @@ function PessoaEdit() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { academiaSlug } = useTenantBase();
+  const isAluno = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
+  const fallbackPath = isAluno ? LINK("/") : listPath;
   const deleteDialog = useMobileDialog("sm");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -181,6 +181,20 @@ function PessoaEdit() {
     setCropFileName(file.name || "foto.jpg");
   }
 
+  function openFotoEditor() {
+    if (!fotoPreview) {
+      fotoInputRef.current?.click();
+      return;
+    }
+    if (cropSrcRef.current) {
+      URL.revokeObjectURL(cropSrcRef.current);
+      cropSrcRef.current = null;
+    }
+    const fromPath = pessoa?.foto?.split("/").pop()?.split("?")[0];
+    setCropFileName(fromPath || cropFileName || "foto.jpg");
+    setCropSrc(fotoPreview);
+  }
+
   function closeFotoCrop() {
     if (cropSrcRef.current) {
       URL.revokeObjectURL(cropSrcRef.current);
@@ -209,9 +223,14 @@ function PessoaEdit() {
   }
 
   useEffect(() => {
+    if (isAluno && id && user?.id != null && Number(id) !== Number(user.id)) {
+      navigate(LINK("/"), { replace: true });
+      return;
+    }
+
     if (!id) {
       toast.error("ID da pessoa ausente na URL.");
-      navigate(listPath);
+      navigate(fallbackPath);
       return;
     }
 
@@ -221,15 +240,15 @@ function PessoaEdit() {
       const status = axios.isAxiosError(error) ? error.response?.status : undefined;
       if (status === 401) return;
       toast.error("Não foi possível carregar a pessoa.");
-      navigate(listPath);
+      navigate(fallbackPath);
       return;
     }
 
     if (!pessoa && !isFetching) {
       toast.error("Pessoa não encontrada.");
-      navigate(listPath);
+      navigate(fallbackPath);
     }
-  }, [id, isLoading, isFetching, isError, error, pessoa, navigate, listPath]);
+  }, [id, isLoading, isFetching, isError, error, pessoa, navigate, fallbackPath, isAluno, user?.id]);
 
   async function handleSubmit(data: Record<string, unknown>) {
     if (!pessoa?.id) return;
@@ -408,24 +427,18 @@ function PessoaEdit() {
           fileName={cropFileName}
           onClose={closeFotoCrop}
           onConfirm={applyFotoFile}
+          onReplace={() => fotoInputRef.current?.click()}
         />
         <EditForm
           formRef={formRef}
           pessoa={pessoa}
           catalogs={{ origens: allOrigens, etiquetas: allEtiquetas, niveis: allNiveis, academias, academiaNome, academiaRequired }}
           fotoPreview={fotoPreview}
-          onPickFoto={() => fotoInputRef.current?.click()}
+          onPickFoto={openFotoEditor}
           onFotoDrop={onFotoDrop}
         />
       </Form>
-      <Grid container spacing={2} sx={{ mt: 0 }}>
-        <Grid item xs={12} md={6} sx={{ minWidth: 0 }}>
-          <PessoaFichas pessoaId={pessoa.id} />
-        </Grid>
-        <Grid item xs={12} md={6} sx={{ minWidth: 0 }}>
-          <PessoaAvaliacoes pessoaId={pessoa.id} />
-        </Grid>
-      </Grid>
+      <PessoaAcompanhamento pessoaId={pessoa.id} />
     </Fragment>
   );
 }

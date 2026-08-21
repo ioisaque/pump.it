@@ -1,4 +1,4 @@
-const OFFLINE_CACHE = "pump-offline-v14";
+const OFFLINE_CACHE = "pump-offline-v15";
 const OFFLINE_URLS = ["/offline.html", "/error/503.svg"];
 
 self.addEventListener("install", (event) => {

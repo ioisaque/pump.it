@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SAFE_AREA_TOP } from "components/layout/FakeStatusBar";
+import { useEffect } from "react";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "./contexts/AuthContext";
 import AppRoutes from "./routes";
@@ -22,6 +23,15 @@ const toasterContainerStyle = {
 };
 
 function App() {
+  useEffect(() => {
+    const onLogout = () => {
+      queryClient.cancelQueries();
+      queryClient.clear();
+    };
+    window.addEventListener("auth:logout", onLogout);
+    return () => window.removeEventListener("auth:logout", onLogout);
+  }, []);
+
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClient}>

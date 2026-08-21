@@ -2,9 +2,9 @@ import { Backdrop, CircularProgress, Grid, styled } from "@mui/material";
 import { pingSessao } from "api/sessoes";
 import PwaPermissionsGate from "components/pwa/PwaPermissionsGate";
 import useAuth from "hooks/useAuth";
-import { PAGE_BACKGROUND } from "utils/app-chrome";
 import { ReactNode, Suspense, useEffect } from "react";
 import { Outlet } from "react-router-dom";
+import { PAGE_BACKGROUND } from "utils/app-chrome";
 import UserBar from "./UserBar";
 
 const Wrapper = styled(Grid)({
@@ -42,17 +42,17 @@ function RouteSuspenseFallback() {
 }
 
 export function DashboardLayout({ children }: { children?: ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, sessionLocked } = useAuth();
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || sessionLocked) return;
     const ping = () => {
       void pingSessao().catch(() => undefined);
     };
     ping();
     const timer = window.setInterval(ping, 60_000);
     return () => window.clearInterval(timer);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, sessionLocked]);
 
   return (
     <PwaPermissionsGate>

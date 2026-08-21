@@ -18,6 +18,16 @@ export const ROOT_SEGMENTS = new Set([
   "configuracoes",
   "sistema",
   "api",
+  "offline",
+  "400",
+  "401",
+  "402",
+  "403",
+  "404",
+  "500",
+  "501",
+  "503",
+  "anamnese",
 ]);
 
 export type LinkQuery = Record<string, string | number | boolean | null | undefined>;

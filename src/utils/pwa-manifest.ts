@@ -7,7 +7,12 @@ type ManifestIcon = {
   purpose?: string;
 };
 
+/** Splash sem logo da academia — igual `PAGE_BACKGROUND`. */
+const SPLASH_FALLBACK = "#f4f1e6";
+
 let blobUrl: string | null = null;
+let applyGen = 0;
+const splashColorByIcon = new Map<string, string>();
 
 function absIcon(url?: string | null): string | null {
   if (!url) return null;
@@ -40,6 +45,64 @@ function academiaIcons(iconUrl: string): ManifestIcon[] {
   ];
 }
 
+function toHex(r: number, g: number, b: number): string {
+  return `#${[r, g, b].map((n) => n.toString(16).padStart(2, "0")).join("")}`;
+}
+
+/** Cor das bordas do ícone — Chrome pinta o splash com `background_color` atrás do tile. */
+async function splashColorFromIcon(url: string): Promise<string> {
+  const cached = splashColorByIcon.get(url);
+  if (cached) return cached;
+  try {
+    const res = await fetch(url, { mode: "cors", credentials: "omit" });
+    if (!res.ok) return SPLASH_FALLBACK;
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.onload = () => resolve(el);
+        el.onerror = () => reject(new Error("icon"));
+        el.src = objectUrl;
+      });
+      const size = 64;
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      if (!ctx) return SPLASH_FALLBACK;
+      ctx.drawImage(img, 0, 0, size, size);
+      const inset = 2;
+      const samples: [number, number][] = [
+        [inset, inset],
+        [size - 1 - inset, inset],
+        [inset, size - 1 - inset],
+        [size - 1 - inset, size - 1 - inset],
+      ];
+      let r = 0;
+      let g = 0;
+      let b = 0;
+      let n = 0;
+      for (const [x, y] of samples) {
+        const p = ctx.getImageData(x, y, 1, 1).data;
+        if (p[3] < 16) continue;
+        r += p[0];
+        g += p[1];
+        b += p[2];
+        n += 1;
+      }
+      if (!n) return SPLASH_FALLBACK;
+      const hex = toHex(Math.round(r / n), Math.round(g / n), Math.round(b / n));
+      splashColorByIcon.set(url, hex);
+      return hex;
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  } catch {
+    return SPLASH_FALLBACK;
+  }
+}
+
 function setLinkHref(rel: string, href: string, type?: string) {
   let el = document.querySelector(`link[rel='${rel}']`) as HTMLLinkElement | null;
   if (!el) {
@@ -57,13 +120,16 @@ export type PwaManifestOpts = {
   iconUrl?: string | null;
 };
 
-export function applyPwaManifest(opts: PwaManifestOpts = {}) {
+export async function applyPwaManifest(opts: PwaManifestOpts = {}) {
+  const gen = ++applyGen;
   const slug = opts.slug?.trim() || academiaSlugFromPath() || "";
   const start = slug ? `/${slug}/` : "/";
   const name = (opts.name || slug || "pump.it").trim() || "pump.it";
   const iconAbs = absIcon(opts.iconUrl);
   const icons = iconAbs ? academiaIcons(iconAbs) : pumpIcons();
   const favicon = iconAbs || publicHref("app-icon.png");
+  const splash = iconAbs ? await splashColorFromIcon(iconAbs) : SPLASH_FALLBACK;
+  if (gen !== applyGen) return;
 
   const manifest = {
     id: start,
@@ -76,8 +142,8 @@ export function applyPwaManifest(opts: PwaManifestOpts = {}) {
     scope: start,
     display: "standalone",
     orientation: "any",
-    background_color: "#f4f1e6",
-    theme_color: "#f4f1e6",
+    background_color: splash,
+    theme_color: splash,
     icons,
   };
 
@@ -93,15 +159,15 @@ export function applyPwaManifest(opts: PwaManifestOpts = {}) {
 export async function bootPwaManifest(): Promise<void> {
   const slug = academiaSlugFromPath();
   if (!slug) {
-    applyPwaManifest({});
+    await applyPwaManifest({});
     return;
   }
-  applyPwaManifest({ slug, name: slug });
+  await applyPwaManifest({ slug, name: slug });
   try {
     const res = await fetch(`/api/auth/academia/${encodeURIComponent(slug)}`);
     if (!res.ok) return;
     const data = (await res.json()) as { academia?: { nome?: string; logo?: string | null } };
-    applyPwaManifest({
+    await applyPwaManifest({
       slug,
       name: data.academia?.nome || slug,
       iconUrl: data.academia?.logo,

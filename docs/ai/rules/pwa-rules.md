@@ -35,7 +35,7 @@ Qualquer mudança nestes arquivos deve permanecer **idêntica** ao cliente (copi
   - Login/install: fundo e ícones conforme `prefers-color-scheme` (claro → pretos; escuro → brancos)
 - Espelhar `theme-color` em light **e** dark (`media`) — senão o dark mode do aparelho força barra preta
 - Fundo da página (`PAGE_BACKGROUND` `#f4f1e6`) **≠** cor da status bar
-- `manifest.theme_color` / `background_color`: **`#f4f1e6`** (splash); em runtime o meta manda
+- `manifest.theme_color` / `background_color`: splash do Chrome. Sem logo da academia: **`#f4f1e6`**. Com logo: cor das **bordas do ícone** (o tile não pode flutuar no creme). Em runtime o meta da status bar manda
 - `viewport-fit=cover` no viewport
 
 ### Toast (`react-hot-toast`)

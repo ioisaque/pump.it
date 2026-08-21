@@ -3,23 +3,25 @@ import { useQuery } from "@tanstack/react-query";
 import { findAcademiaPublic } from "api/academias";
 import AppErrorBoundary from "components/AppErrorBoundary";
 import RequireAuth, { RequireStaff } from "components/auth/RequireAuth";
+import SessionRelogin from "components/auth/SessionRelogin";
 import { DashboardLayout } from "components/layout/Dashboard";
 import FakeStatusBar, { AppSafeArea } from "components/layout/FakeStatusBar";
 import React, { Suspense, useEffect, useLayoutEffect } from "react";
 import { BrowserRouter, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { acessosRoutes } from "routes/acessos";
+import { anamnesesRoutes } from "routes/anamneses";
 import { authRoutes } from "routes/auth";
 import { avaliacoesRoutes } from "routes/avaliacoes";
 import { checkinRoutes } from "routes/checkin";
 import { configuracoesRoutes } from "routes/configuracoes";
 import { dashboardRoutes } from "routes/dashboard";
-import { errorRoutes } from "routes/errors";
+import { errorFallbackRoute, errorRoutes } from "routes/errors";
 import { exerciciosRoutes } from "routes/exercicios";
 import { tenantFallbackRoutes } from "routes/fallback";
 import { fichasRoutes } from "routes/fichas";
 import { mensalidadesRoutes } from "routes/mensalidades";
 import { notificacoesRoutes } from "routes/notificacoes";
-import { pessoasRoutes } from "routes/pessoas";
+import { pessoaEditRoute, pessoasStaffRoutes } from "routes/pessoas";
 import { plataformaRoutes } from "routes/plataforma";
 import { sistemaRoutes } from "routes/sistema";
 import { tabelasRoutes } from "routes/tabelas";
@@ -44,8 +46,10 @@ function AppChromeBar() {
   const hide =
     pathname === "/login" ||
     pathname === "/install" ||
+    pathname === "/offline" ||
     pathname.endsWith("/login") ||
-    pathname.endsWith("/install");
+    pathname.endsWith("/install") ||
+    /^\/(400|401|402|403|404|500|501|503)$/.test(pathname);
   return <FakeStatusBar hidden={hide} cube={false} color="#FFFFFF" />;
 }
 
@@ -61,11 +65,11 @@ function PwaManifestSync() {
 
   useEffect(() => {
     if (!slug) {
-      applyPwaManifest({});
+      void applyPwaManifest({});
       return;
     }
     if (!isFetched) return;
-    applyPwaManifest({
+    void applyPwaManifest({
       slug,
       name: academia?.nome || slug,
       iconUrl: academia?.logo,
@@ -89,8 +93,10 @@ const AppRoutes: React.FC = () => {
       {acessosRoutes}
       {checkinRoutes}
       {mensalidadesRoutes}
+      {anamnesesRoutes}
+      {pessoaEditRoute}
       <Route element={<RequireStaff />}>
-        {pessoasRoutes}
+        {pessoasStaffRoutes}
         {tabelasRoutes}
         {notificacoesRoutes}
         {configuracoesRoutes}
@@ -104,6 +110,7 @@ const AppRoutes: React.FC = () => {
     <ThemeProvider theme={appTheme}>
       <CssBaseline />
       <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+        <SessionRelogin />
         <AppErrorBoundary>
           <PwaManifestSync />
           <AppChromeBar />
@@ -113,6 +120,16 @@ const AppRoutes: React.FC = () => {
                 <Route path="/install" element={<InstallPage />} />
                 <Route path="/:academiaSlug/install" element={<InstallPage />} />
                 {authRoutes}
+
+                <Route
+                  element={
+                    <Suspense fallback={<RouteSuspenseFallback />}>
+                      <Outlet />
+                    </Suspense>
+                  }
+                >
+                  {errorRoutes}
+                </Route>
 
                 <Route element={<RequireAuth />}>
                   <Route path="/" element={<DashboardLayout />}>
@@ -124,15 +141,7 @@ const AppRoutes: React.FC = () => {
                   </Route>
                 </Route>
 
-                <Route
-                  element={
-                    <Suspense fallback={<RouteSuspenseFallback />}>
-                      <Outlet />
-                    </Suspense>
-                  }
-                >
-                  {errorRoutes}
-                </Route>
+                {errorFallbackRoute}
               </Routes>
             </Suspense>
           </AppSafeArea>

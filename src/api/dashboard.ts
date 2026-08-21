@@ -6,6 +6,7 @@ export type DashboardStats = {
   mensalidades_atraso: number;
   fichas: number;
   scope: "academia" | "self";
+  anamnese_pendente?: boolean;
 };
 
 export async function getDashboardStats(): Promise<DashboardStats> {

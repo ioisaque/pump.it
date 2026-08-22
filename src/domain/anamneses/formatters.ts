@@ -18,16 +18,21 @@ export function mergeAnamneseRespostas(row: Anamnese | null | undefined): Anamne
             tempo: String((item as { tempo?: unknown }).tempo ?? ""),
           }))
           .filter((item) => Number.isFinite(item.id_musculo))
-      : Array.isArray(row.respostas?.dorMusculos)
-        ? row.respostas.dorMusculos
-            .map(Number)
-            .filter((id) => Number.isFinite(id))
-            .map((id_musculo) => ({
-              id_musculo,
-              intensidade: String(row.respostas?.dorIntensidade ?? ""),
-              tempo: String(row.respostas?.dorTempo ?? ""),
-            }))
-        : base.dorItens,
+      : (() => {
+          const legacy = row.respostas as
+            | (AnamneseRespostas & { dorMusculos?: unknown; dorIntensidade?: unknown; dorTempo?: unknown })
+            | undefined;
+          return Array.isArray(legacy?.dorMusculos)
+            ? legacy.dorMusculos
+                .map(Number)
+                .filter((id) => Number.isFinite(id))
+                .map((id_musculo) => ({
+                  id_musculo,
+                  intensidade: String(legacy?.dorIntensidade ?? ""),
+                  tempo: String(legacy?.dorTempo ?? ""),
+                }))
+            : base.dorItens;
+        })(),
     parq: base.parq,
     parqDetalhe: base.parqDetalhe,
     declaracao: Boolean(row.respostas?.declaracao),

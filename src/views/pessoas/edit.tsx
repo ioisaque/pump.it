@@ -436,9 +436,9 @@ function PessoaEdit() {
           fotoPreview={fotoPreview}
           onPickFoto={openFotoEditor}
           onFotoDrop={onFotoDrop}
+          afterDados={<PessoaAcompanhamento pessoaId={pessoa.id} />}
         />
       </Form>
-      <PessoaAcompanhamento pessoaId={pessoa.id} />
     </Fragment>
   );
 }

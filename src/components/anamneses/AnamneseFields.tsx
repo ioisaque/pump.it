@@ -21,13 +21,13 @@ import { COMPACT_INPUT_FONT_SIZE } from "components/form/inputConstants";
 import { compactInputRootSx } from "components/form/inputGroupStyles";
 import {
     ANAMNESE_ESCALA,
-    ANAMNESE_ESCALA_CORES,
     ANAMNESE_EXPERIENCIA,
     ANAMNESE_FREQUENCIA,
     ANAMNESE_OBJETIVOS,
     ANAMNESE_PARQ,
     ANAMNESE_ROTINA,
     ANAMNESE_STEPS,
+    anamneseOptionChipStyle,
     AnamneseSection,
     PARQ_ANSWER,
     ParqAnswer,
@@ -190,8 +190,7 @@ function Scale({
       sx={{ mb: 1.5, flexWrap: "wrap" }}
     >
       {options.map((opt, index) => {
-        const color = ANAMNESE_ESCALA_CORES[index] ?? "#64748B";
-        const selectedText = color === "#FFD22B" ? "#111" : "#fff";
+        const { bgColor: color, txtColor: selectedText } = anamneseOptionChipStyle(opt, options);
         return (
           <ToggleButton
             key={opt}

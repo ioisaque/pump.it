@@ -10,8 +10,8 @@ import {
     Stack,
     Typography,
 } from "@mui/material";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { findFicha, saveFicha } from "api/fichas";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { desvincularFichaAluno, findFicha, saveFicha } from "api/fichas";
 import FichaForm from "components/fichas/FichaForm";
 import Icon from "components/Icon";
 import EntityHeader from "components/layout/EntityHeader";
@@ -36,6 +36,16 @@ export default function FichaEdit() {
   const isCliente = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
   const pessoaId = Number(searchParams.get("pessoa"));
   const [pending, setPending] = useState<FichaPayload | null>(null);
+
+  const desvincular = useMutation({
+    mutationFn: () => desvincularFichaAluno(fichaId, pessoaId),
+    onSuccess: async () => {
+      toast.success("Plano desvinculado.");
+      await queryClient.invalidateQueries({ queryKey: ["fichas"] });
+      navigate(LINK(`/pessoas/${pessoaId}/edit`), { replace: true });
+    },
+    onError: () => toast.error("Não foi possível desvincular."),
+  });
 
   const { data, isLoading, error } = useQuery({
     queryKey: fichaQueryKey(fichaId),
@@ -133,10 +143,26 @@ export default function FichaEdit() {
         right={
           <Stack direction="row" flexWrap="wrap" useFlexGap gap={1}>
             {isCliente ? null : (
-              <Button type="submit" form="editFicha" variant="contained" color="info" sx={BTN_140}>
-                <Icon name="mdi:content-save-outline" />
-                Salvar
-              </Button>
+              <>
+                <Button type="submit" form="editFicha" variant="contained" color="info" sx={BTN_140}>
+                  <Icon name="mdi:content-save-outline" />
+                  Salvar
+                </Button>
+                {pessoaId > 0 ? (
+                  <Button
+                    variant="contained"
+                    color="error"
+                    sx={BTN_140}
+                    disabled={desvincular.isLoading}
+                    onClick={() => {
+                      if (window.confirm(`Desvincular plano "${data.nome}"?`)) desvincular.mutate();
+                    }}
+                  >
+                    <Icon name="mdi:link-off" />
+                    Desvincular
+                  </Button>
+                ) : null}
+              </>
             )}
             <Button onClick={() => navigate(-1)} variant="contained" color="quinzel" sx={BTN_140}>
               <Icon name="undo" />

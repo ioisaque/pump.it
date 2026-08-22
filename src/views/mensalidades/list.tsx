@@ -13,6 +13,7 @@ import MensalidadeFormDialog from "components/mensalidades/MensalidadeFormDialog
 import SearchInput from "components/SearchField";
 import { MENSALIDADE_STATUS_LABEL, Mensalidade } from "domain/mensalidades/types";
 import { ALUNO_NIVEL_MAX } from "domain/pessoas/constants";
+import { BRL } from "domain/shared/formatters";
 import useAuth from "hooks/useAuth";
 import { useMobileColumnVisibility } from "hooks/useMobileColumnVisibility";
 import useTenantBase from "hooks/useTenantBase";

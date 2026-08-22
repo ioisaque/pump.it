@@ -44,6 +44,16 @@ export const ANAMNESE_ESCALA = ["Muito ruim", "Ruim", "Regular", "Boa", "Muito b
 export const ANAMNESE_FREQUENCIA = ["Nunca", "Raramente", "Às vezes", "Frequentemente", "Sempre"] as const;
 /** Vermelho → verde (marca). Texto escuro no amarelo. */
 export const ANAMNESE_ESCALA_CORES = ["#FF5356", "#f36700", "#FFD22B", "#0076F3", "#33CC66"] as const;
+
+export function anamneseOptionChipStyle(
+  value: string,
+  options: readonly string[],
+): { bgColor: string; txtColor: string } {
+  const index = options.indexOf(value);
+  const bgColor = index >= 0 ? (ANAMNESE_ESCALA_CORES[index] ?? "#64748B") : "#64748B";
+  const txtColor = bgColor === "#FFD22B" ? "#111" : "#fff";
+  return { bgColor, txtColor };
+}
 export const ANAMNESE_ROTINA = [
   "Predominantemente sentado(a)",
   "Em pé",

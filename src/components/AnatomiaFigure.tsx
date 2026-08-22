@@ -8,6 +8,9 @@ import { useMemo, useRef, useState, type ReactNode } from "react";
 /** Cor única do highlight (multiply sobre a máscara). */
 export const ANATOMIA_HIGHLIGHT = "#FF5356";
 
+/** Dor / queixa do questionário — preto, não vermelho de marca. */
+export const ANATOMIA_DOR_HIGHLIGHT = "#000";
+
 export const ANATOMIA_GRUPOS = [
   "shoulders",
   "chest",

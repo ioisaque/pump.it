@@ -12,6 +12,13 @@ export function formatPadraoLabel(padrao: string): string {
   return diasFromPadrao(padrao).join(" / ");
 }
 
+export function formatFichaData(value: string | null | undefined): string {
+  if (!value) return "—";
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return value;
+  return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
+}
+
 export function formatDescanso(segundos: number): string {
   if (!Number.isFinite(segundos)) return "—";
   if (segundos < 60) return `${segundos}s`;

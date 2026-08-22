@@ -1,6 +1,6 @@
 import { Alert, Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
-import { useQuery } from "@tanstack/react-query";
-import { findAvaliacao } from "api/avaliacoes";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { deleteAvaliacao, findAvaliacao } from "api/avaliacoes";
 import AnatomiaFigure, { type AnatomiaGroupProp } from "components/AnatomiaFigure";
 import Icon from "components/Icon";
 import EntityHeader from "components/layout/EntityHeader";
@@ -24,6 +24,7 @@ import { AvaliacaoMedidas } from "domain/avaliacoes/types";
 import { ALUNO_NIVEL_MAX } from "domain/pessoas/constants";
 import useAuth from "hooks/useAuth";
 import { Fragment, useMemo } from "react";
+import toast from "react-hot-toast";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { LINK } from "utils/link";
 
@@ -79,21 +80,41 @@ export default function AvaliacaoShow() {
   const [searchParams] = useSearchParams();
   const avaliacaoId = Number(id);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const isCliente = (user?.nivel ?? 0) <= ALUNO_NIVEL_MAX;
   const academiaFromQuery = Number(searchParams.get("academia_id"));
+  const pessoaFromQuery = Number(searchParams.get("pessoa"));
+  const pessoaId = Number.isFinite(pessoaFromQuery) && pessoaFromQuery > 0 ? pessoaFromQuery : 0;
   const academiaId =
     user?.academia_id && user.academia_id > 0
       ? user.academia_id
       : academiaFromQuery > 0
         ? academiaFromQuery
         : undefined;
+  const linkQuery = {
+    ...(academiaId ? { academia_id: academiaId } : {}),
+    ...(pessoaId ? { pessoa: pessoaId } : {}),
+  };
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["avaliacoes", avaliacaoId, academiaId],
     queryFn: () => findAvaliacao(avaliacaoId, academiaId ? { academia_id: academiaId } : undefined),
     enabled: Number.isInteger(avaliacaoId) && avaliacaoId > 0,
     retry: 1,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteAvaliacao(avaliacaoId, academiaId ? { academia_id: academiaId } : undefined),
+    onSuccess: async () => {
+      toast.success("Avaliação excluída.");
+      await queryClient.invalidateQueries({ queryKey: ["avaliacoes"] });
+      navigate(pessoaId > 0 ? LINK(`/pessoas/${pessoaId}/edit`) : LINK("/avaliacoes"));
+    },
+    onError: (err: unknown) => {
+      const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(message || "Falha ao excluir.");
+    },
   });
 
   const m = data?.medidas;
@@ -122,7 +143,7 @@ export default function AvaliacaoShow() {
     return (
       <Box sx={{ py: 2 }}>
         <Alert severity="error">Avaliação não encontrada.</Alert>
-        <Button sx={{ mt: 2, width: 140, height: 40 }} variant="contained" color="quinzel" onClick={() => navigate(LINK("/avaliacoes"))}>
+        <Button sx={{ mt: 2, width: 140, height: 40 }} variant="contained" color="quinzel" onClick={() => navigate(pessoaId > 0 ? LINK(`/pessoas/${pessoaId}/edit`) : LINK("/avaliacoes"))}>
           <Icon name="undo" />
           Voltar
         </Button>
@@ -151,19 +172,36 @@ export default function AvaliacaoShow() {
         right={
           <Stack direction="row" flexWrap="wrap" useFlexGap gap={1}>
             {isCliente ? null : (
-              <Button
-                variant="contained"
-                color="info"
-                sx={BTN_140}
-                onClick={() =>
-                  navigate(LINK(`/avaliacoes/${data.id}/edit`, academiaId ? { academia_id: academiaId } : undefined))
-                }
-              >
-                <Icon name="line-md:edit" />
-                Editar
-              </Button>
+              <>
+                <Button
+                  variant="contained"
+                  color="info"
+                  sx={BTN_140}
+                  onClick={() => navigate(LINK(`/avaliacoes/${data.id}/edit`, linkQuery))}
+                >
+                  <Icon name="line-md:edit" />
+                  Editar
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  sx={BTN_140}
+                  disabled={deleteMutation.isLoading}
+                  onClick={() => {
+                    if (window.confirm("Excluir esta avaliação?")) deleteMutation.mutate();
+                  }}
+                >
+                  <Icon name="mdi:delete" />
+                  Excluir
+                </Button>
+              </>
             )}
-            <Button onClick={() => navigate(LINK("/avaliacoes"))} variant="contained" color="quinzel" sx={BTN_140}>
+            <Button
+              onClick={() => navigate(pessoaId > 0 ? LINK(`/pessoas/${pessoaId}/edit`) : LINK("/avaliacoes"))}
+              variant="contained"
+              color="quinzel"
+              sx={BTN_140}
+            >
               <Icon name="undo" />
               Voltar
             </Button>

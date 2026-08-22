@@ -13,7 +13,7 @@ import { BR_UF } from "constants/brazil";
 import { PessoaDetail } from "domain/pessoas/types";
 import { Flag } from "domain/tabelas/types";
 import { useCepAutofill } from "hooks/useCepAutofill";
-import { Fragment, RefObject } from "react";
+import { Fragment, ReactNode, RefObject } from "react";
 import { pessoaSectionSx } from "utils/pessoas/styles";
 
 export type PessoaFormCatalogs = {
@@ -32,6 +32,8 @@ type EditFormProps = {
   fotoPreview?: string | null;
   onPickFoto?: () => void;
   onFotoDrop?: (file: File) => void;
+  /** Conteúdo entre o card de dados pessoais e o de endereço (ex. abas de acompanhamento). */
+  afterDados?: ReactNode;
 };
 
 export default function EditForm({
@@ -41,6 +43,7 @@ export default function EditForm({
   fotoPreview,
   onPickFoto,
   onFotoDrop,
+  afterDados,
 }: EditFormProps) {
   const { origens = [], etiquetas = [], niveis = [], academias = [], academiaNome, academiaRequired = true } = catalogs;
   const { cepLoading, buscarCep, onCepChange } = useCepAutofill(formRef);
@@ -48,9 +51,6 @@ export default function EditForm({
   return (
     <Fragment>
       <Box sx={pessoaSectionSx}>
-        <Typography variant="subtitle1" fontWeight={600} gutterBottom>
-          Dados Pessoais
-        </Typography>
         <Grid container spacing={2} alignItems="center" sx={{ mb: 2 }}>
           <Grid
             item
@@ -146,6 +146,8 @@ export default function EditForm({
           </Grid>
         </Grid>
       </Box>
+
+      {afterDados}
 
       <Box sx={pessoaSectionSx}>
         <Typography variant="subtitle1" fontWeight={600} gutterBottom>

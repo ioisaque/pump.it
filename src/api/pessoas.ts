@@ -1,3 +1,4 @@
+import { ArquivoAnexo } from "domain/anexos/types";
 import { PESSOA_LIST_TIPO, PessoaListTipo } from "domain/pessoas/constants";
 import { Pessoa, PessoaDetail } from "domain/pessoas/types";
 import { api } from "services/api";
@@ -51,4 +52,22 @@ export function savePessoa(id: number, payload: FormData | Record<string, unknow
 
 export function deletePessoa(id: number) {
   return api.delete(`pessoas/${id}/delete`);
+}
+
+export function listPessoaAnexos(pessoaId: number) {
+  return api.get<{ anexos: ArquivoAnexo[] }>(`pessoas/${pessoaId}/anexos`).then((res) => res.data.anexos);
+}
+
+export function uploadPessoaAnexo(pessoaId: number, file: File) {
+  const formData = new FormData();
+  formData.append("arquivo", file);
+  return api
+    .post<{ anexo: ArquivoAnexo }>(`pessoas/${pessoaId}/anexos`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+    .then((res) => res.data.anexo);
+}
+
+export function deletePessoaAnexo(pessoaId: number, anexoId: number) {
+  return api.delete(`pessoas/${pessoaId}/anexos/${anexoId}`);
 }

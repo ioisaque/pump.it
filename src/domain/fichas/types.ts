@@ -32,6 +32,7 @@ export type Ficha = {
   criado_em?: string | null;
   alterado_por?: number;
   alterado_em?: string | null;
+  prescritor_nome?: string | null;
   itens: FichaItem[];
 };
 
